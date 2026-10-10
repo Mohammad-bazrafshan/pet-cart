@@ -537,4 +537,163 @@ router.patch(
     }
   }
 );
+
+
+/* دریافت درخواست‌های همکاری کلینیک */
+router.get(
+  "/cooperation-requests",
+  authenticateToken,
+  requireRole("admin"),
+  async (req: AuthRequest, res) => {
+    try {
+      const result = await pool.query(`
+        SELECT
+          id,
+          clinic_name,
+          manager_name,
+          phone,
+          city,
+          description,
+          status,
+          created_at
+        FROM clinic_cooperation_requests
+        ORDER BY
+          CASE WHEN status = 'pending' THEN 0 ELSE 1 END,
+          created_at DESC
+      `);
+
+      return res.json(result.rows);
+    } catch (error) {
+      console.error("Get cooperation requests error:", error);
+
+      return res.status(500).json({
+        message: "دریافت درخواست‌های همکاری با خطا مواجه شد.",
+      });
+    }
+  }
+);
+
+/* تأیید یا رد درخواست همکاری */
+router.patch(
+  "/cooperation-requests/:id",
+  authenticateToken,
+  requireRole("admin"),
+  async (req: AuthRequest, res) => {
+    const requestId = Number(req.params.id);
+    const { status } = req.body;
+
+    if (
+      !Number.isInteger(requestId) ||
+      requestId <= 0
+    ) {
+      return res.status(400).json({
+        message: "شناسه درخواست معتبر نیست.",
+      });
+    }
+
+    if (!["approved", "rejected"].includes(status)) {
+      return res.status(400).json({
+        message: "وضعیت درخواست معتبر نیست.",
+      });
+    }
+
+    let client;
+
+    try {
+      client = await pool.connect();
+
+      await client.query("BEGIN");
+
+      // قفل کردن درخواست تا از پردازش هم‌زمان جلوگیری شود
+      const requestResult = await client.query(
+        `
+        SELECT *
+        FROM clinic_cooperation_requests
+        WHERE id = $1
+        FOR UPDATE
+        `,
+        [requestId]
+      );
+
+      if (requestResult.rows.length === 0) {
+        await client.query("ROLLBACK");
+
+        return res.status(404).json({
+          message: "درخواست همکاری پیدا نشد.",
+        });
+      }
+
+      const request = requestResult.rows[0];
+
+      if (request.status !== "pending") {
+        await client.query("ROLLBACK");
+
+        return res.status(409).json({
+          message: "این درخواست قبلاً بررسی شده است.",
+        });
+      }
+
+      let clinic = null;
+
+      // در صورت تأیید، ابتدا کلینیک را ایجاد می‌کنیم
+      if (status === "approved") {
+        const clinicResult = await client.query(
+          `
+          INSERT INTO clinics (
+            name,
+            phone,
+            address,
+            description
+          )
+          VALUES ($1, $2, $3, $4)
+          RETURNING *
+          `,
+          [
+            request.clinic_name,
+            request.phone,
+            request.city,
+            request.description,
+          ]
+        );
+
+        clinic = clinicResult.rows[0];
+      }
+
+      // تغییر وضعیت درخواست
+      const updateResult = await client.query(
+        `
+        UPDATE clinic_cooperation_requests
+        SET status = $1
+        WHERE id = $2
+        RETURNING *
+        `,
+        [status, requestId]
+      );
+
+      await client.query("COMMIT");
+
+      return res.json({
+        message:
+          status === "approved"
+            ? "درخواست تأیید شد و کلینیک ایجاد شد."
+            : "درخواست همکاری رد شد.",
+        request: updateResult.rows[0],
+        clinic,
+      });
+    } catch (error) {
+      if (client) {
+        await client.query("ROLLBACK").catch(() => {});
+      }
+
+      console.error("Review cooperation request error:", error);
+
+      return res.status(500).json({
+        message: "بررسی درخواست همکاری با خطا مواجه شد.",
+      });
+    } finally {
+      client?.release();
+    }
+  }
+);
+
 export default router;

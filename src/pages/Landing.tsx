@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 
 const features = [
   {
@@ -40,6 +41,7 @@ const steps = [
 ];
 
 function PawIcon({ className = "h-7 w-7" }: { className?: string }) {
+
   return (
     <svg
       viewBox="0 0 64 64"
@@ -57,6 +59,8 @@ function PawIcon({ className = "h-7 w-7" }: { className?: string }) {
 }
 
 export default function Landing() {
+    const navigate = useNavigate();
+
   return (
     <main
       dir="rtl"
@@ -350,12 +354,10 @@ export default function Landing() {
               </p>
             </div>
 
-            <Link
-              to="/register"
-              className="shrink-0 rounded-2xl bg-white px-7 py-4 font-bold text-blue-700 shadow-lg transition hover:-translate-y-0.5 hover:bg-blue-50"
-            >
-              <span className="text-blue-700"> همکاری با پت‌کارت</span>
-            </Link>
+            <button onClick={() => navigate("/clinic-cooperation")}               className="shrink-0 rounded-2xl bg-white px-7 py-4 font-bold text-blue-700 shadow-lg transition hover:-translate-y-0.5 hover:bg-blue-50"
+>
+              درخواست همکاری کلینیک
+            </button>
           </div>
         </div>
       </section>
