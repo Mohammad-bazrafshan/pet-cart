@@ -1,68 +1,147 @@
-# پت‌کارت
+# 🐾 PetCard — Pet Healthcare Management Platform
 
-فرانت‌اند React و API مبتنی بر NestJS برای مدیریت حساب کاربری و اطلاعات حیوانات خانگی.
+**PetCard** is a web-based platform designed to help pet owners manage their pets' health information, keep track of veterinary appointments, and organize important care reminders.
 
-## نیازمندی‌ها
+The goal of PetCard is to make pet healthcare management simpler and provide a convenient way for pet owners to connect with veterinary clinics.
 
-- Node.js 20 یا بالاتر
-- PostgreSQL 14 یا بالاتر (محلی یا یک سرویس مدیریت‌شده)
+## ✨ Features
 
-## راه‌اندازی API
+- 🐶 **Pet Management:** Manage pet profiles and basic information.
+- 📋 **Digital Health Records:** Organize pets' medical information and treatment history.
+- 🩺 **Veterinary Appointments:** Book and manage veterinary appointments.
+- 🔔 **Care Reminders:** Support reminders for important healthcare activities.
+- 👨‍⚕️ **Veterinarian Dashboard:** Manage appointments and access relevant patient information.
+- 🏥 **Clinic Management:** Organize veterinary clinic information.
+- 🔐 **Authentication and Role-Based Access:** Separate access for pet owners, veterinarians, and administrators.
 
-از پوشه‌ی پروژه:
+> Features may evolve as development progresses.
 
-```powershell
-cd backend
-npm install
-Copy-Item .env.example .env
-```
+## 🛠️ Tech Stack
 
-ابتدا با pgAdmin یا ابزار مورداعتمادت یک دیتابیس به نام `petcart` بساز. سپس مقادیر `DATABASE_URL` و `JWT_SECRET` را در `backend/.env` تنظیم کن. مقدار `DATABASE_URL` باید به نام کاربری و گذرواژه واقعی PostgreSQL تو اشاره کند؛ مقدارهای نمونه در `.env.example` صرفاً جای‌نگهدارند. مقدار `JWT_SECRET` باید یک راز تصادفیِ حداقل ۳۲ کاراکتری باشد و نباید در مخزن ثبت یا با کسی به اشتراک گذاشته شود.
+### Frontend
+- React
+- TypeScript
+- Vite
+- Tailwind CSS
+- React Router
+- Axios
 
-نمونه‌ی قالب آدرس اتصال:
+### Backend
+- Node.js
+- Express.js
+- TypeScript
+- JWT Authentication
+
+### Database
+- PostgreSQL
+
+## 📁 Project Structure
 
 ```text
-postgresql://<نام‌کاربری>:<گذرواژه>@localhost:5432/petcart?schema=public
+PetCard/
+├── src/
+│   ├── api/
+│   ├── components/
+│   ├── context/
+│   ├── features/
+│   ├── pages/
+│   ├── services/
+│   └── ...
+├── backend/
+│   └── src/
+│       ├── routes/
+│       ├── middleware/
+│       ├── controllers/
+│       └── ...
+├── public/
+├── package.json
+└── README.md
 ```
 
-اگر گذرواژه در URL نویسه‌های ویژه دارد، آن را URL-encode کن.
+*The directory structure may change as the project develops.*
 
-برای اجرای migrationها و آماده‌سازی Prisma:
+## 🚀 Getting Started
 
-```powershell
-npm run db:deploy
-npm run db:generate
+### Prerequisites
+
+Make sure you have the following installed:
+
+- Node.js
+- npm
+- PostgreSQL
+- Git
+
+### 1. Clone the Repository
+
+```bash
+git clone <YOUR_REPOSITORY_URL>
+cd PetCard
 ```
 
-سپس API را در حالت توسعه اجرا کن:
+### 2. Install Frontend Dependencies
 
-```powershell
-npm run start:dev
-```
-
-API روی `http://localhost:3000/api` اجرا می‌شود. اتصال PostgreSQL باید پیش از اجرای سرور برقرار باشد.
-
-## راه‌اندازی فرانت‌اند
-
-در پنجره‌ی PowerShell دیگری، از ریشه‌ی پروژه:
-
-```powershell
+```bash
 npm install
+```
+
+### 3. Configure Environment Variables
+
+Create a `.env` file in the project root:
+
+```env
+VITE_API_URL=http://localhost:5000/api
+```
+
+### 4. Start the Frontend
+
+```bash
 npm run dev
 ```
 
-Vite مسیر `/api` را به بک‌اند محلی هدایت می‌کند. در صورت استقرار روی محیط دیگر می‌توان `VITE_API_URL` را برای فرانت و `FRONTEND_ORIGIN` را برای API تنظیم کرد.
+### 5. Configure the Backend
 
-برای دیدن داشبورد بدون راه‌اندازی دیتابیس یا API، فرانت‌اند را با `npm run dev` اجرا کن و در صفحه‌ی ورود دکمه‌ی «ورود نمایشی و دیدن داشبورد» را بزن. حالت نمایشی فقط در محیط توسعه فعال است و داده‌های نمونه را در حافظه نگه می‌دارد.
+Navigate to the backend directory:
 
-## مسیرهای پیاده‌سازی‌شده
+```bash
+cd backend
+npm install
+```
 
-- `POST /api/auth/register` و `POST /api/auth/login`: ایجاد حساب و ورود
-- `GET /api/auth/me` و `POST /api/auth/logout`: بررسی حساب و خروج
-- `GET /api/pets`, `POST /api/pets`, `GET /api/pets/:id`, `PATCH /api/pets/:id`, `DELETE /api/pets/:id`: مدیریت حیوانات متعلق به کاربر واردشده
+Configure the backend environment variables according to your local PostgreSQL setup and backend configuration.
 
-نشست با کوکی `httpOnly`، `SameSite=Lax` و عمر ۸ ساعته نگه‌داری می‌شود. گذرواژه‌ها با bcrypt هش می‌شوند و مالکیت هر حیوان در API بررسی می‌شود.
+Make sure the PostgreSQL database is running and the required database and tables have been created.
 
-## محدوده فعلی
+Start the backend using the development script defined in `backend/package.json`.
 
-ثبت‌نام/ورود و اطلاعات پایه حیوانات به PostgreSQL وصل شده‌اند. نوبت‌ها، یادآوری‌ها و پرونده پزشکی هنوز در API پیاده‌سازی نشده‌اند و رابط کاربری آن‌ها فعلاً وضعیت خالی را نشان می‌دهد.
+## 🔐 User Roles
+
+PetCard is designed around three user roles:
+
+| Role | Responsibilities |
+|---|---|
+| Pet Owner | Manage pets and appointments |
+| Veterinarian | View appointments and relevant patient information |
+| Administrator | Manage administrative operations |
+
+Access to features depends on the user's role and permissions.
+
+## 🗺️ Roadmap
+
+- [ ] Improve clinic registration and management
+- [ ] Add clinic coordinates and location-based discovery
+- [ ] Recommend nearby veterinary clinics
+- [ ] Improve appointment availability and scheduling
+- [ ] Expand pet health records and reminders
+- [ ] Improve responsive design and accessibility
+
+## 🎯 Project Goal
+
+PetCard aims to provide a centralized and user-friendly solution for managing pet healthcare, helping owners stay organized and making veterinary appointment management more convenient.
+
+## 📄 License
+
+No license has been specified yet. Add a license if you intend to distribute or reuse the project under defined terms.
+
+---
+
+**PetCard** — Better care for happier pets. 🐾
