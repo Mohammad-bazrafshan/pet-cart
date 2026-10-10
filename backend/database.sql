@@ -194,7 +194,17 @@ CREATE TABLE reminders (
         ON DELETE CASCADE
 );
 
-
+CREATE TABLE clinic_cooperation_requests (
+    id SERIAL PRIMARY KEY,
+    clinic_name VARCHAR(150) NOT NULL,
+    manager_name VARCHAR(150) NOT NULL,
+    phone VARCHAR(30) NOT NULL,
+    city VARCHAR(100) NOT NULL,
+    description TEXT,
+    status VARCHAR(20) NOT NULL DEFAULT 'pending'
+        CHECK (status IN ('pending', 'approved', 'rejected')),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
 -- =====================================================
 -- CHECK ALL TABLES
 -- =====================================================
@@ -483,3 +493,66 @@ VALUES (
     'نوبت آزمایشی برای تست پنل دامپزشک'
 )
 RETURNING *;
+
+
+SELECT table_name
+FROM information_schema.tables
+WHERE table_schema = 'public'
+  AND table_type = 'BASE TABLE'
+ORDER BY table_name
+
+
+
+ALTER TABLE appointments
+ADD CONSTRAINT chk_appointments_status
+CHECK (
+    status IN (
+        'pending',
+        'confirmed',
+        'completed',
+        'cancelled'
+    )
+);
+
+ALTER TABLE reminders
+ADD CONSTRAINT chk_reminders_type
+CHECK (
+    type IN (
+        'vaccination',
+        'medication',
+        'checkup',
+        'other'
+    )
+);
+
+SELECT
+    conname AS constraint_name,
+    pg_get_constraintdef(oid) AS definition
+FROM pg_constraint
+WHERE conrelid = 'appointments'::regclass
+  AND contype = 'f';
+
+  ALTER TABLE veterinarians
+ADD CONSTRAINT uq_veterinarian_clinic
+UNIQUE (id, clinic_id);
+
+
+
+ALTER TABLE appointments
+ADD CONSTRAINT fk_appointment_vet_clinic
+FOREIGN KEY (veterinarian_id, clinic_id)
+REFERENCES veterinarians (id, clinic_id)
+ON DELETE CASCADE;
+
+
+
+SELECT
+    id,
+    clinic_name,
+    manager_name,
+    phone,
+    city,
+    status,
+    created_at
+FROM clinic_cooperation_requests
+ORDER BY created_at DESC;
