@@ -1,3 +1,4 @@
+
 import { createBrowserRouter } from "react-router-dom";
 import EditPet from "../pages/owner/EditPet";
 import Landing from "../pages/Landing";
@@ -21,10 +22,14 @@ import AdminLayout from "../layouts/AdminLayout";
 import AdminDashboard from "../pages/admin/Dashboard";
 import AdminUsers from "../pages/admin/Users";
 import AdminClinics from "../pages/admin/Clinics";
-
 import AdminClinicDetails from "../pages/admin/ClinicDetails";
 import CreateClinic from "../pages/admin/CreateClinic";
 import EditClinic from "../pages/admin/EditClinic";
+
+// صفحه جدید همکاری کلینیک
+import ClinicCooperationPage from "../pages/ClinicCooperationPage";
+import CooperationRequests from "../pages/admin/CooperationRequests";
+
 const router = createBrowserRouter([
   {
     element: <RoleProtectedRoute allowedRoles={["veterinarian"]} />,
@@ -46,7 +51,6 @@ const router = createBrowserRouter([
             path: "patients/:id",
             element: <ClinicPatientProfile />,
           },
-          
         ],
       },
     ],
@@ -74,13 +78,23 @@ const router = createBrowserRouter([
             path: "clinics/:id/edit",
             element: <EditClinic />,
           },
+          {
+            path:"cooperation-requests",
+            element:<CooperationRequests />
+          },
         ],
       },
     ],
   },
+
   {
     path: "/",
     element: <Landing />,
+  },
+
+  {
+    path: "/clinic-cooperation",
+    element: <ClinicCooperationPage />,
   },
 
   {
