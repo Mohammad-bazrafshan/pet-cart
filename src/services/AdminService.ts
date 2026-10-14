@@ -145,6 +145,12 @@ export async function updateAdminClinic(
   return response.data.clinic;
 }
 
+export async function deleteAdminClinic(
+  clinicId: number,
+): Promise<void> {
+  await api.delete(`/admin/clinics/${clinicId}`);
+}
+
 export async function createAdminVeterinarian(data: CreateVeterinarianData) {
   const response = await api.post("/admin/veterinarians", data);
 

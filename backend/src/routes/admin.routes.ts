@@ -675,7 +675,114 @@ router.patch(
     }
   },
 );
+router.delete(
+  "/clinics/:id",
+  authenticateToken,
+  requireRole("admin"),
+  async (req: AuthRequest, res) => {
+    let client: Awaited<ReturnType<typeof pool.connect>> | undefined;
+    let transactionStarted = false;
 
+    try {
+      const clinicId = Number(req.params.id);
+
+      // بررسی شناسه کلینیک
+      if (!Number.isInteger(clinicId) || clinicId <= 0) {
+        return res.status(400).json({
+          message: "شناسه کلینیک معتبر نیست.",
+        });
+      }
+
+      client = await pool.connect();
+
+      await client.query("BEGIN");
+      transactionStarted = true;
+
+      // بررسی وجود کلینیک و قفل کردن رکورد تا پایان تراکنش
+      const clinicResult = await client.query(
+        `
+        SELECT id, name
+        FROM clinics
+        WHERE id = $1
+        FOR UPDATE
+        `,
+        [clinicId],
+      );
+
+      if (clinicResult.rows.length === 0) {
+        await client.query("ROLLBACK");
+        transactionStarted = false;
+
+        return res.status(404).json({
+          message: "کلینیک موردنظر پیدا نشد.",
+        });
+      }
+
+      // جلوگیری از حذف کلینیکی که دامپزشک وابسته دارد
+      const veterinariansResult = await client.query(
+        `
+        SELECT COUNT(*)::int AS count
+        FROM veterinarians
+        WHERE clinic_id = $1
+        `,
+        [clinicId],
+      );
+
+      const veterinariansCount = veterinariansResult.rows[0].count;
+
+      if (veterinariansCount > 0) {
+        await client.query("ROLLBACK");
+        transactionStarted = false;
+
+        return res.status(409).json({
+          message:
+            "این کلینیک دامپزشک وابسته دارد. ابتدا دامپزشکان آن را به کلینیک دیگری منتقل کنید یا وابستگی‌هایشان را از طریق فرایند مدیریتی مناسب برطرف کنید.",
+        });
+      }
+
+      // حذف کلینیک
+      await client.query(
+        `
+        DELETE FROM clinics
+        WHERE id = $1
+        `,
+        [clinicId],
+      );
+
+      await client.query("COMMIT");
+      transactionStarted = false;
+
+      return res.status(200).json({
+        message: "کلینیک با موفقیت حذف شد.",
+      });
+    } catch (error) {
+      if (transactionStarted && client) {
+        await client.query("ROLLBACK").catch(() => {});
+      }
+
+      // وجود وابستگی در سایر جداول دیتابیس
+      if (
+        typeof error === "object" &&
+        error !== null &&
+        "code" in error &&
+        error.code === "23503"
+      ) {
+        return res.status(409).json({
+          message:
+            "این کلینیک دارای اطلاعات وابسته در سیستم است و فعلاً قابل حذف نیست.",
+        });
+      }
+
+      console.error("Delete clinic error:", error);
+
+      return res.status(500).json({
+        message: "حذف کلینیک با خطا مواجه شد.",
+      });
+    } finally {
+      client?.release();
+    }
+  },
+);
 /* دریافت درخواست‌های همکاری کلینیک */
 
 /* دریافت درخواست‌های همکاری کلینیک */
