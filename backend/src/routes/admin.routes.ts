@@ -133,7 +133,6 @@ router.patch(
     }
   },
 );
-
 router.get(
   "/clinics",
   authenticateToken,
@@ -148,6 +147,8 @@ router.get(
           c.address,
           c.description,
           c.created_at,
+          c.province,
+          c.city,
           COUNT(v.id)::int AS veterinarians_count
         FROM clinics c
         LEFT JOIN veterinarians v
@@ -158,15 +159,17 @@ router.get(
           c.phone,
           c.address,
           c.description,
-          c.created_at
+          c.created_at,
+          c.province,
+          c.city
         ORDER BY c.created_at DESC
       `);
 
-      res.json(result.rows);
+      return res.json(result.rows);
     } catch (error) {
       console.error("Admin clinics error:", error);
 
-      res.status(500).json({
+      return res.status(500).json({
         message: "دریافت لیست کلینیک‌ها با خطا مواجه شد.",
       });
     }
@@ -552,18 +555,29 @@ router.get(
     }
   },
 );
-
 router.post(
   "/clinics",
   authenticateToken,
   requireRole("admin"),
   async (req: AuthRequest, res) => {
     try {
-      const { name, phone, address, description } = req.body;
+      const { name, phone, address, description, province, city } = req.body;
 
-      if (!name || !name.trim()) {
+      if (typeof name !== "string" || !name.trim()) {
         return res.status(400).json({
           message: "نام کلینیک الزامی است.",
+        });
+      }
+
+      if (typeof province !== "string" || !province.trim()) {
+        return res.status(400).json({
+          message: "انتخاب استان الزامی است.",
+        });
+      }
+
+      if (typeof city !== "string" || !city.trim()) {
+        return res.status(400).json({
+          message: "انتخاب شهر الزامی است.",
         });
       }
 
@@ -573,33 +587,41 @@ router.post(
           name,
           phone,
           address,
-          description
+          description,
+          province,
+          city
         )
-        VALUES ($1, $2, $3, $4)
+        VALUES ($1, $2, $3, $4, $5, $6)
         RETURNING
           id,
           name,
           phone,
           address,
           description,
+          province,
+          city,
           created_at
         `,
         [
           name.trim(),
-          phone?.trim() || null,
-          address?.trim() || null,
-          description?.trim() || null,
+          typeof phone === "string" && phone.trim() ? phone.trim() : null,
+          typeof address === "string" && address.trim() ? address.trim() : null,
+          typeof description === "string" && description.trim()
+            ? description.trim()
+            : null,
+          province.trim(),
+          city.trim(),
         ],
       );
 
-      res.status(201).json({
+      return res.status(201).json({
         message: "کلینیک با موفقیت ایجاد شد.",
         clinic: result.rows[0],
       });
     } catch (error) {
       console.error("Create clinic error:", error);
 
-      res.status(500).json({
+      return res.status(500).json({
         message: "ایجاد کلینیک با خطا مواجه شد.",
       });
     }
@@ -620,11 +642,23 @@ router.patch(
         });
       }
 
-      const { name, phone, address, description } = req.body;
+      const { name, phone, address, description, province, city } = req.body;
 
       if (typeof name !== "string" || !name.trim()) {
         return res.status(400).json({
           message: "نام کلینیک الزامی است.",
+        });
+      }
+
+      if (typeof province !== "string" || !province.trim()) {
+        return res.status(400).json({
+          message: "انتخاب استان الزامی است.",
+        });
+      }
+
+      if (typeof city !== "string" || !city.trim()) {
+        return res.status(400).json({
+          message: "انتخاب شهر الزامی است.",
         });
       }
 
@@ -635,14 +669,18 @@ router.patch(
           name = $1,
           phone = $2,
           address = $3,
-          description = $4
-        WHERE id = $5
+          description = $4,
+          province = $5,
+          city = $6
+        WHERE id = $7
         RETURNING
           id,
           name,
           phone,
           address,
           description,
+          province,
+          city,
           created_at
         `,
         [
@@ -652,6 +690,8 @@ router.patch(
           typeof description === "string" && description.trim()
             ? description.trim()
             : null,
+          province.trim(),
+          city.trim(),
           clinicId,
         ],
       );
@@ -675,6 +715,7 @@ router.patch(
     }
   },
 );
+
 router.delete(
   "/clinics/:id",
   authenticateToken,

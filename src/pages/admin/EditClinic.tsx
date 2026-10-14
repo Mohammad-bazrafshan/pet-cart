@@ -1,6 +1,10 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import {
+  getCities,
+  getProvincesList,
+} from "@code-plate/iran-cities";
+import {
   getAdminClinicDetails,
   updateAdminClinic,
   type CreateClinicData,
@@ -10,12 +14,22 @@ function EditClinic() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
 
+  const provinces = getProvincesList();
+
+  const [selectedProvince, setSelectedProvince] = useState("");
+
   const [form, setForm] = useState<CreateClinicData>({
     name: "",
     phone: "",
     address: "",
     description: "",
+    province: "",
+    city: "",
   });
+
+  const cities = selectedProvince
+    ? getCities(selectedProvince)
+    : [];
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -32,11 +46,19 @@ function EditClinic() {
       try {
         const clinic = await getAdminClinicDetails(Number(id));
 
+        const province = provinces.find(
+          (item) => item.fa === clinic.province
+        );
+
+        setSelectedProvince(province?.en ?? "");
+
         setForm({
           name: clinic.name ?? "",
           phone: clinic.phone ?? "",
           address: clinic.address ?? "",
           description: clinic.description ?? "",
+          province: clinic.province ?? "",
+          city: clinic.city ?? "",
         });
       } catch (error) {
         console.error(error);
@@ -62,6 +84,39 @@ function EditClinic() {
     }));
   }
 
+  function handleProvinceChange(
+    event: React.ChangeEvent<HTMLSelectElement>
+  ) {
+    const provinceCode = event.target.value;
+
+    const province = provinces.find(
+      (item) => item.en === provinceCode
+    );
+
+    setSelectedProvince(provinceCode);
+
+    setForm((previous) => ({
+      ...previous,
+      province: province?.fa ?? "",
+      city: "",
+    }));
+  }
+
+  function handleCityChange(
+    event: React.ChangeEvent<HTMLSelectElement>
+  ) {
+    const cityCode = event.target.value;
+
+    const city = cities.find(
+      (item) => item.en === cityCode
+    );
+
+    setForm((previous) => ({
+      ...previous,
+      city: city?.fa ?? "",
+    }));
+  }
+
   async function handleSubmit(
     event: React.FormEvent<HTMLFormElement>
   ) {
@@ -73,6 +128,11 @@ function EditClinic() {
       return;
     }
 
+    if (!form.province || !form.city) {
+      setError("انتخاب استان و شهر الزامی است.");
+      return;
+    }
+
     try {
       setSaving(true);
 
@@ -81,6 +141,8 @@ function EditClinic() {
         phone: form.phone?.trim() ?? "",
         address: form.address?.trim() ?? "",
         description: form.description?.trim() ?? "",
+        province: form.province,
+        city: form.city,
       });
 
       navigate(`/admin/clinics/${id}`);
@@ -92,10 +154,19 @@ function EditClinic() {
     }
   }
 
+  const inputClass =
+    "w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-100";
+
+  const labelClass =
+    "mb-2 block text-sm font-semibold text-slate-700";
+
   if (loading) {
     return (
-      <div className="rounded-xl bg-white p-6">
-        <p className="text-gray-500">
+      <div
+        dir="rtl"
+        className="rounded-3xl border border-slate-100 bg-white p-6 shadow-sm"
+      >
+        <p className="text-sm text-slate-500">
           در حال دریافت اطلاعات کلینیک...
         </p>
       </div>
@@ -103,29 +174,32 @@ function EditClinic() {
   }
 
   return (
-    <div className="mx-auto max-w-3xl space-y-6">
+    <div
+      dir="rtl"
+      className="mx-auto max-w-3xl space-y-6 text-slate-800"
+    >
       <div>
         <button
           type="button"
           onClick={() => navigate(`/admin/clinics/${id}`)}
-          className="mb-3 text-sm font-medium text-blue-600 hover:text-blue-800"
+          className="mb-4 text-sm font-medium text-blue-600 transition hover:text-blue-800"
         >
           ← بازگشت به جزئیات کلینیک
         </button>
 
-        <h2 className="text-2xl font-bold text-gray-800">
+        <h2 className="text-2xl font-bold">
           ویرایش کلینیک
         </h2>
 
-        <p className="mt-1 text-sm text-gray-500">
-          اطلاعات کلینیک را تغییر بده و ذخیره کن.
+        <p className="mt-2 text-sm text-slate-500">
+          اطلاعات و موقعیت مکانی کلینیک را ویرایش کن.
         </p>
       </div>
 
       {error && (
         <div
           role="alert"
-          className="rounded-lg bg-red-50 p-3 text-sm text-red-600"
+          className="rounded-2xl border border-red-100 bg-red-50 p-4 text-sm text-red-600"
         >
           {error}
         </div>
@@ -133,13 +207,10 @@ function EditClinic() {
 
       <form
         onSubmit={handleSubmit}
-        className="space-y-5 rounded-xl border border-gray-200 bg-white p-6 shadow-sm"
+        className="space-y-6 rounded-3xl border border-slate-100 bg-white p-5 shadow-sm sm:p-8"
       >
         <div>
-          <label
-            htmlFor="name"
-            className="mb-2 block text-sm font-medium text-gray-700"
-          >
+          <label htmlFor="name" className={labelClass}>
             نام کلینیک *
           </label>
 
@@ -150,15 +221,12 @@ function EditClinic() {
             onChange={handleChange}
             required
             maxLength={150}
-            className="w-full rounded-lg border border-gray-300 px-4 py-3 outline-none focus:border-blue-500"
+            className={inputClass}
           />
         </div>
 
         <div>
-          <label
-            htmlFor="phone"
-            className="mb-2 block text-sm font-medium text-gray-700"
-          >
+          <label htmlFor="phone" className={labelClass}>
             شماره تماس
           </label>
 
@@ -168,16 +236,70 @@ function EditClinic() {
             type="tel"
             value={form.phone}
             onChange={handleChange}
-            className="w-full rounded-lg border border-gray-300 px-4 py-3 outline-none focus:border-blue-500"
+            className={inputClass}
           />
         </div>
 
+        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+          <div>
+            <label htmlFor="province" className={labelClass}>
+              استان کلینیک *
+            </label>
+
+            <select
+              id="province"
+              value={selectedProvince}
+              onChange={handleProvinceChange}
+              required
+              className={inputClass}
+            >
+              <option value="">استان را انتخاب کن</option>
+
+              {provinces.map((province) => (
+                <option
+                  key={province.id}
+                  value={province.en}
+                >
+                  {province.fa}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label htmlFor="city" className={labelClass}>
+              شهر کلینیک *
+            </label>
+
+            <select
+              id="city"
+              value={
+                cities.find((city) => city.fa === form.city)
+                  ?.en ?? ""
+              }
+              onChange={handleCityChange}
+              disabled={!selectedProvince}
+              required
+              className={`${inputClass} disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400`}
+            >
+              <option value="">
+                {selectedProvince
+                  ? "شهر را انتخاب کن"
+                  : "ابتدا استان را انتخاب کن"}
+              </option>
+
+              {cities.map((city) => (
+                <option key={city.id} value={city.en}>
+                  {city.fa}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+
         <div>
-          <label
-            htmlFor="address"
-            className="mb-2 block text-sm font-medium text-gray-700"
-          >
-            آدرس
+          <label htmlFor="address" className={labelClass}>
+            آدرس دقیق کلینیک
           </label>
 
           <input
@@ -185,15 +307,13 @@ function EditClinic() {
             name="address"
             value={form.address}
             onChange={handleChange}
-            className="w-full rounded-lg border border-gray-300 px-4 py-3 outline-none focus:border-blue-500"
+            placeholder="خیابان، کوچه، پلاک و..."
+            className={inputClass}
           />
         </div>
 
         <div>
-          <label
-            htmlFor="description"
-            className="mb-2 block text-sm font-medium text-gray-700"
-          >
+          <label htmlFor="description" className={labelClass}>
             توضیحات
           </label>
 
@@ -203,15 +323,15 @@ function EditClinic() {
             value={form.description}
             onChange={handleChange}
             rows={4}
-            className="w-full resize-y rounded-lg border border-gray-300 px-4 py-3 outline-none focus:border-blue-500"
+            className={`${inputClass} resize-y`}
           />
         </div>
 
-        <div className="flex flex-wrap gap-3">
+        <div className="flex flex-wrap gap-3 border-t border-slate-100 pt-5">
           <button
             type="submit"
             disabled={saving}
-            className="rounded-lg bg-blue-600 px-5 py-3 text-sm font-medium text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+            className="rounded-2xl bg-blue-600 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-blue-200 transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
           >
             {saving ? "در حال ذخیره..." : "ذخیره تغییرات"}
           </button>
@@ -219,7 +339,7 @@ function EditClinic() {
           <button
             type="button"
             onClick={() => navigate(`/admin/clinics/${id}`)}
-            className="rounded-lg border border-gray-300 px-5 py-3 text-sm font-medium text-gray-700 transition hover:bg-gray-50"
+            className="rounded-2xl border border-slate-200 px-6 py-3 text-sm font-semibold text-slate-600 transition hover:bg-slate-50"
           >
             انصراف
           </button>
