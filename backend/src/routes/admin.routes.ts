@@ -5,7 +5,9 @@ import {
   requireRole,
   type AuthRequest,
 } from "../middleware/auth.middleware";
-
+import path from "node:path";
+import { access } from "node:fs/promises";
+import bcrypt from "bcrypt";
 const router = Router();
 
 router.get(
@@ -39,9 +41,8 @@ router.get(
         message: "دریافت آمار داشبورد مدیریت با خطا مواجه شد.",
       });
     }
-  }
+  },
 );
-
 
 router.get(
   "/users",
@@ -68,7 +69,7 @@ router.get(
         message: "دریافت لیست کاربران با خطا مواجه شد.",
       });
     }
-  }
+  },
 );
 
 router.patch(
@@ -80,11 +81,7 @@ router.patch(
       const userId = Number(req.params.id);
       const { role } = req.body;
 
-      const allowedRoles = [
-        "owner",
-        "veterinarian",
-        "admin",
-      ];
+      const allowedRoles = ["owner", "veterinarian", "admin"];
 
       // بررسی id
       if (!Number.isInteger(userId)) {
@@ -114,7 +111,7 @@ router.patch(
         WHERE id = $2
         RETURNING id, name, email, role, created_at
         `,
-        [role, userId]
+        [role, userId],
       );
 
       if (result.rows.length === 0) {
@@ -134,7 +131,7 @@ router.patch(
         message: "تغییر نقش کاربر با خطا مواجه شد.",
       });
     }
-  }
+  },
 );
 
 router.get(
@@ -173,7 +170,7 @@ router.get(
         message: "دریافت لیست کلینیک‌ها با خطا مواجه شد.",
       });
     }
-  }
+  },
 );
 
 router.get(
@@ -198,11 +195,15 @@ router.get(
           phone,
           address,
           description,
-          created_at
+          created_at,
+          manager_name,
+          province,
+          city,
+          vet_license_number
         FROM clinics
         WHERE id = $1
         `,
-        [clinicId]
+        [clinicId],
       );
 
       if (clinicResult.rows.length === 0) {
@@ -213,18 +214,19 @@ router.get(
 
       const veterinariansResult = await pool.query(
         `
-        SELECT
-          v.id,
-          u.name,
-          u.email,
-          v.specialty
-        FROM veterinarians v
-        INNER JOIN users u
-          ON u.id = v.user_id
-        WHERE v.clinic_id = $1
-        ORDER BY u.name
-        `,
-        [clinicId]
+  SELECT
+    v.id,
+    COALESCE(v.full_name, u.name) AS name,
+    u.email,
+    v.phone,
+    v.license_number,
+    v.specialty
+  FROM veterinarians v
+  LEFT JOIN users u ON u.id = v.user_id
+  WHERE v.clinic_id = $1
+  ORDER BY COALESCE(v.full_name, u.name) NULLS LAST
+  `,
+        [clinicId],
       );
 
       res.json({
@@ -238,9 +240,170 @@ router.get(
         message: "دریافت جزئیات کلینیک با خطا مواجه شد.",
       });
     }
-  }
+  },
 );
 
+// ثبت دامپزشک جدید همراه با حساب کاربری
+router.post(
+  "/veterinarians",
+  authenticateToken,
+  requireRole("admin"),
+  async (req: AuthRequest, res) => {
+    const client = await pool.connect();
+    let transactionStarted = false;
+
+    try {
+      const {
+        fullName,
+        email,
+        password,
+        phone,
+        licenseNumber,
+        specialty,
+        clinicId,
+      } = req.body;
+
+      // اعتبارسنجی اطلاعات
+      if (
+        typeof fullName !== "string" ||
+        !fullName.trim() ||
+        typeof email !== "string" ||
+        !email.trim() ||
+        typeof password !== "string" ||
+        password.length < 8 ||
+        typeof phone !== "string" ||
+        !phone.trim() ||
+        typeof licenseNumber !== "string" ||
+        !licenseNumber.trim() ||
+        typeof specialty !== "string" ||
+        !specialty.trim() ||
+        !Number.isInteger(Number(clinicId)) ||
+        Number(clinicId) <= 0
+      ) {
+        return res.status(400).json({
+          message: "اطلاعات را کامل کنید. رمز عبور باید حداقل ۸ کاراکتر باشد.",
+        });
+      }
+
+      const normalizedEmail = email.trim().toLowerCase();
+
+      await client.query("BEGIN");
+      transactionStarted = true;
+
+      // بررسی وجود کلینیک
+      const clinicResult = await client.query(
+        "SELECT id FROM clinics WHERE id = $1",
+        [Number(clinicId)],
+      );
+
+      if (clinicResult.rows.length === 0) {
+        await client.query("ROLLBACK");
+        transactionStarted = false;
+
+        return res.status(404).json({
+          message: "کلینیک موردنظر پیدا نشد.",
+        });
+      }
+
+      // بررسی تکراری نبودن ایمیل
+      const existingUser = await client.query(
+        "SELECT id FROM users WHERE LOWER(email) = $1",
+        [normalizedEmail],
+      );
+
+      if (existingUser.rows.length > 0) {
+        await client.query("ROLLBACK");
+        transactionStarted = false;
+
+        return res.status(409).json({
+          message: "این ایمیل قبلاً ثبت شده است.",
+        });
+      }
+
+      // بررسی تکراری نبودن شماره نظام دامپزشکی
+      const existingVet = await client.query(
+        `SELECT id FROM veterinarians WHERE license_number = $1`,
+        [licenseNumber.trim()],
+      );
+
+      if (existingVet.rows.length > 0) {
+        await client.query("ROLLBACK");
+        transactionStarted = false;
+
+        return res.status(409).json({
+          message: "این شماره نظام دامپزشکی قبلاً ثبت شده است.",
+        });
+      }
+
+      // هش کردن رمز عبور
+      const hashedPassword = await bcrypt.hash(password, 10);
+
+      // ایجاد حساب کاربری دامپزشک
+      const userResult = await client.query(
+        `
+        INSERT INTO users (name, email, password, role)
+        VALUES ($1, $2, $3, 'veterinarian')
+        RETURNING id, name, email, role
+        `,
+        [fullName.trim(), normalizedEmail, hashedPassword],
+      );
+
+      const newUser = userResult.rows[0];
+
+      // اتصال حساب کاربری به اطلاعات دامپزشک
+      const vetResult = await client.query(
+        `
+        INSERT INTO veterinarians (
+          user_id,
+          clinic_id,
+          full_name,
+          phone,
+          license_number,
+          specialty
+        )
+        VALUES ($1, $2, $3, $4, $5, $6)
+        RETURNING
+          id,
+          user_id,
+          clinic_id,
+          full_name,
+          phone,
+          license_number,
+          specialty
+        `,
+        [
+          newUser.id,
+          Number(clinicId),
+          fullName.trim(),
+          phone.trim(),
+          licenseNumber.trim(),
+          specialty.trim(),
+        ],
+      );
+
+      await client.query("COMMIT");
+      transactionStarted = false;
+
+      return res.status(201).json({
+        message: "حساب کاربری و اطلاعات دامپزشک با موفقیت ثبت شدند.",
+        user: newUser,
+        veterinarian: vetResult.rows[0],
+      });
+    } catch (error) {
+      if (transactionStarted) {
+        await client.query("ROLLBACK");
+      }
+
+      console.error("Create veterinarian error:", error);
+
+      return res.status(500).json({
+        message: "ثبت دامپزشک با خطا مواجه شد.",
+      });
+    } finally {
+      client.release();
+    }
+  },
+);
 router.post(
   "/clinics/:clinicId/veterinarians",
   authenticateToken,
@@ -275,7 +438,7 @@ router.post(
         FROM clinics
         WHERE id = $1
         `,
-        [clinicId]
+        [clinicId],
       );
 
       if (clinicResult.rows.length === 0) {
@@ -291,7 +454,7 @@ router.post(
         FROM users
         WHERE id = $1
         `,
-        [Number(userId)]
+        [Number(userId)],
       );
 
       if (userResult.rows.length === 0) {
@@ -315,7 +478,7 @@ router.post(
         FROM veterinarians
         WHERE user_id = $1
         `,
-        [Number(userId)]
+        [Number(userId)],
       );
 
       if (existingVet.rows.length > 0) {
@@ -335,11 +498,7 @@ router.post(
         VALUES ($1, $2, $3)
         RETURNING id, user_id, clinic_id, specialty
         `,
-        [
-          Number(userId),
-          clinicId,
-          specialty.trim(),
-        ]
+        [Number(userId), clinicId, specialty.trim()],
       );
 
       res.status(201).json({
@@ -354,17 +513,13 @@ router.post(
         },
       });
     } catch (error) {
-      console.error(
-        "Assign veterinarian to clinic error:",
-        error
-      );
+      console.error("Assign veterinarian to clinic error:", error);
 
       res.status(500).json({
-        message:
-          "اتصال دامپزشک به کلینیک با خطا مواجه شد.",
+        message: "اتصال دامپزشک به کلینیک با خطا مواجه شد.",
       });
     }
-  }
+  },
 );
 
 router.get(
@@ -389,17 +544,13 @@ router.get(
 
       res.json(result.rows);
     } catch (error) {
-      console.error(
-        "Available veterinarians error:",
-        error
-      );
+      console.error("Available veterinarians error:", error);
 
       res.status(500).json({
-        message:
-          "دریافت لیست دامپزشکان آزاد با خطا مواجه شد.",
+        message: "دریافت لیست دامپزشکان آزاد با خطا مواجه شد.",
       });
     }
-  }
+  },
 );
 
 router.post(
@@ -408,12 +559,7 @@ router.post(
   requireRole("admin"),
   async (req: AuthRequest, res) => {
     try {
-      const {
-        name,
-        phone,
-        address,
-        description,
-      } = req.body;
+      const { name, phone, address, description } = req.body;
 
       if (!name || !name.trim()) {
         return res.status(400).json({
@@ -443,7 +589,7 @@ router.post(
           phone?.trim() || null,
           address?.trim() || null,
           description?.trim() || null,
-        ]
+        ],
       );
 
       res.status(201).json({
@@ -451,17 +597,13 @@ router.post(
         clinic: result.rows[0],
       });
     } catch (error) {
-      console.error(
-        "Create clinic error:",
-        error
-      );
+      console.error("Create clinic error:", error);
 
       res.status(500).json({
-        message:
-          "ایجاد کلینیک با خطا مواجه شد.",
+        message: "ایجاد کلینیک با خطا مواجه شد.",
       });
     }
-  }
+  },
 );
 
 router.patch(
@@ -505,17 +647,13 @@ router.patch(
         `,
         [
           name.trim(),
-          typeof phone === "string" && phone.trim()
-            ? phone.trim()
-            : null,
-          typeof address === "string" && address.trim()
-            ? address.trim()
-            : null,
+          typeof phone === "string" && phone.trim() ? phone.trim() : null,
+          typeof address === "string" && address.trim() ? address.trim() : null,
           typeof description === "string" && description.trim()
             ? description.trim()
             : null,
           clinicId,
-        ]
+        ],
       );
 
       if (result.rowCount === 0) {
@@ -535,9 +673,10 @@ router.patch(
         message: "ویرایش اطلاعات کلینیک با خطا مواجه شد.",
       });
     }
-  }
+  },
 );
 
+/* دریافت درخواست‌های همکاری کلینیک */
 
 /* دریافت درخواست‌های همکاری کلینیک */
 router.get(
@@ -548,18 +687,25 @@ router.get(
     try {
       const result = await pool.query(`
         SELECT
-          id,
-          clinic_name,
-          manager_name,
-          phone,
-          city,
-          description,
-          status,
-          created_at
-        FROM clinic_cooperation_requests
-        ORDER BY
-          CASE WHEN status = 'pending' THEN 0 ELSE 1 END,
-          created_at DESC
+  id,
+  clinic_name,
+  manager_name,
+  vet_license_number,
+  vet_full_name,
+  vet_phone,
+  vet_specialty,
+  phone,
+  province,
+  city,
+  address,
+  description,
+  (license_document_path IS NOT NULL) AS has_license_document,
+  status,
+  created_at
+FROM clinic_cooperation_requests
+ORDER BY
+  CASE WHEN status = 'pending' THEN 0 ELSE 1 END,
+  created_at DESC
       `);
 
       return res.json(result.rows);
@@ -570,7 +716,115 @@ router.get(
         message: "دریافت درخواست‌های همکاری با خطا مواجه شد.",
       });
     }
-  }
+  },
+);
+
+/* دریافت امن پروانه فعالیت کلینیک برای ادمین */
+router.get(
+  "/cooperation-requests/:id/license-document",
+  authenticateToken,
+  requireRole("admin"),
+  async (req: AuthRequest, res) => {
+    try {
+      const requestId = Number(req.params.id);
+
+      if (!Number.isInteger(requestId) || requestId <= 0) {
+        return res.status(400).json({
+          message: "شناسه درخواست معتبر نیست.",
+        });
+      }
+
+      const result = await pool.query(
+        `
+        SELECT license_document_path
+        FROM clinic_cooperation_requests
+        WHERE id = $1
+        `,
+        [requestId],
+      );
+
+      if (result.rows.length === 0) {
+        return res.status(404).json({
+          message: "درخواست همکاری پیدا نشد.",
+        });
+      }
+
+      const storedPath = result.rows[0].license_document_path;
+
+      if (!storedPath) {
+        return res.status(404).json({
+          message: "پروانه‌ای برای این درخواست ثبت نشده است.",
+        });
+      }
+
+      // باید با مسیر ذخیره‌سازی فایل در clinics.routes.ts یکسان باشد.
+      const uploadDirectory = path.resolve(
+        process.cwd(),
+        "private-uploads",
+        "clinic-licenses",
+      );
+
+      const filePath = path.resolve(uploadDirectory, storedPath);
+      const relativePath = path.relative(uploadDirectory, filePath);
+
+      // جلوگیری از دسترسی به فایل‌های خارج از پوشه پروانه‌ها
+      if (relativePath.startsWith("..") || path.isAbsolute(relativePath)) {
+        return res.status(400).json({
+          message: "مسیر فایل معتبر نیست.",
+        });
+      }
+
+      try {
+        await access(filePath);
+      } catch {
+        return res.status(404).json({
+          message: "فایل پروانه در سرور پیدا نشد.",
+        });
+      }
+
+      const extension = path.extname(filePath).toLowerCase();
+
+      const allowedTypes: Record<string, string> = {
+        ".pdf": "application/pdf",
+        ".jpg": "image/jpeg",
+        ".jpeg": "image/jpeg",
+        ".png": "image/png",
+      };
+
+      const contentType = allowedTypes[extension];
+
+      if (!contentType) {
+        return res.status(415).json({
+          message: "نوع فایل پروانه پشتیبانی نمی‌شود.",
+        });
+      }
+
+      res.setHeader("Content-Type", contentType);
+      res.setHeader("X-Content-Type-Options", "nosniff");
+
+      return res.download(
+        filePath,
+        `clinic-license-${requestId}${extension}`,
+        (error) => {
+          if (error) {
+            console.error("Download clinic license error:", error);
+
+            if (!res.headersSent) {
+              res.status(500).json({
+                message: "دریافت فایل پروانه با خطا مواجه شد.",
+              });
+            }
+          }
+        },
+      );
+    } catch (error) {
+      console.error("Get clinic license error:", error);
+
+      return res.status(500).json({
+        message: "دریافت فایل پروانه با خطا مواجه شد.",
+      });
+    }
+  },
 );
 
 /* تأیید یا رد درخواست همکاری */
@@ -582,10 +836,7 @@ router.patch(
     const requestId = Number(req.params.id);
     const { status } = req.body;
 
-    if (
-      !Number.isInteger(requestId) ||
-      requestId <= 0
-    ) {
+    if (!Number.isInteger(requestId) || requestId <= 0) {
       return res.status(400).json({
         message: "شناسه درخواست معتبر نیست.",
       });
@@ -597,14 +848,12 @@ router.patch(
       });
     }
 
-    let client;
+    let client: Awaited<ReturnType<typeof pool.connect>> | undefined;
 
     try {
       client = await pool.connect();
-
       await client.query("BEGIN");
 
-      // قفل کردن درخواست تا از پردازش هم‌زمان جلوگیری شود
       const requestResult = await client.query(
         `
         SELECT *
@@ -612,7 +861,7 @@ router.patch(
         WHERE id = $1
         FOR UPDATE
         `,
-        [requestId]
+        [requestId],
       );
 
       if (requestResult.rows.length === 0) {
@@ -635,31 +884,61 @@ router.patch(
 
       let clinic = null;
 
-      // در صورت تأیید، ابتدا کلینیک را ایجاد می‌کنیم
       if (status === "approved") {
+        // ۱. ساخت کلینیک با اطلاعات درخواست
         const clinicResult = await client.query(
           `
           INSERT INTO clinics (
             name,
             phone,
             address,
-            description
+            description,
+            manager_name,
+            province,
+            city,
+            vet_license_number
           )
-          VALUES ($1, $2, $3, $4)
+          VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
           RETURNING *
           `,
           [
             request.clinic_name,
             request.phone,
-            request.city,
+            request.address,
             request.description,
-          ]
+            request.manager_name,
+            request.province,
+            request.city,
+            request.vet_license_number,
+          ],
         );
 
         clinic = clinicResult.rows[0];
+
+        // ۲. ثبت دامپزشک مسئول بدون نیاز به حساب کاربری
+        await client.query(
+          `
+          INSERT INTO veterinarians (
+            user_id,
+            clinic_id,
+            specialty,
+            full_name,
+            phone,
+            license_number
+          )
+          VALUES (NULL, $1, $2, $3, $4, $5)
+          `,
+          [
+            clinic.id,
+            request.vet_specialty,
+            request.vet_full_name || request.manager_name,
+            request.vet_phone,
+            request.vet_license_number,
+          ],
+        );
       }
 
-      // تغییر وضعیت درخواست
+      // ۳. به‌روزرسانی وضعیت درخواست
       const updateResult = await client.query(
         `
         UPDATE clinic_cooperation_requests
@@ -667,7 +946,7 @@ router.patch(
         WHERE id = $2
         RETURNING *
         `,
-        [status, requestId]
+        [status, requestId],
       );
 
       await client.query("COMMIT");
@@ -675,7 +954,7 @@ router.patch(
       return res.json({
         message:
           status === "approved"
-            ? "درخواست تأیید شد و کلینیک ایجاد شد."
+            ? "درخواست تأیید شد و کلینیک و دامپزشک مسئول ثبت شدند."
             : "درخواست همکاری رد شد.",
         request: updateResult.rows[0],
         clinic,
@@ -693,7 +972,6 @@ router.patch(
     } finally {
       client?.release();
     }
-  }
+  },
 );
-
 export default router;

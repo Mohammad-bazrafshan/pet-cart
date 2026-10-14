@@ -556,3 +556,134 @@ SELECT
     created_at
 FROM clinic_cooperation_requests
 ORDER BY created_at DESC;
+
+
+
+
+SELECT
+    column_name,
+    data_type,
+    character_maximum_length,
+    is_nullable,
+    column_default
+FROM information_schema.columns
+WHERE table_name = 'clinics'
+ORDER BY ordinal_position;
+
+
+
+ALTER TABLE clinics
+ADD COLUMN province VARCHAR(100),
+ADD COLUMN city VARCHAR(100),
+ADD COLUMN latitude DECIMAL(10, 7),
+ADD COLUMN longitude DECIMAL(10, 7);
+
+
+
+ALTER TABLE clinic_cooperation_requests
+ADD COLUMN IF NOT EXISTS vet_license_number VARCHAR(50);
+
+ALTER TABLE clinic_cooperation_requests
+ADD COLUMN IF NOT EXISTS province VARCHAR(100);
+
+ALTER TABLE clinic_cooperation_requests
+ADD COLUMN IF NOT EXISTS address TEXT;
+
+ALTER TABLE clinic_cooperation_requests
+ADD COLUMN IF NOT EXISTS license_document_path TEXT;
+
+
+
+
+-- اطلاعات تکمیلی کلینیک
+ALTER TABLE clinics
+  ADD COLUMN IF NOT EXISTS manager_name VARCHAR(150),
+  ADD COLUMN IF NOT EXISTS province VARCHAR(100),
+  ADD COLUMN IF NOT EXISTS city VARCHAR(100),
+  ADD COLUMN IF NOT EXISTS vet_license_number VARCHAR(50);
+
+-- اطلاعات دامپزشکی که الزاماً حساب کاربری ندارد
+ALTER TABLE veterinarians
+  ALTER COLUMN user_id DROP NOT NULL;
+
+ALTER TABLE veterinarians
+  ADD COLUMN IF NOT EXISTS full_name VARCHAR(150),
+  ADD COLUMN IF NOT EXISTS phone VARCHAR(30),
+  ADD COLUMN IF NOT EXISTS license_number VARCHAR(50);
+
+
+ALTER TABLE clinic_cooperation_requests
+  ADD COLUMN IF NOT EXISTS vet_full_name VARCHAR(150),
+  ADD COLUMN IF NOT EXISTS vet_phone VARCHAR(30),
+  ADD COLUMN IF NOT EXISTS vet_specialty VARCHAR(150);
+
+
+-- اطلاعات دامپزشک در درخواست همکاری
+ALTER TABLE clinic_cooperation_requests
+ADD COLUMN IF NOT EXISTS vet_full_name VARCHAR(150),
+ADD COLUMN IF NOT EXISTS vet_phone VARCHAR(30),
+ADD COLUMN IF NOT EXISTS vet_specialty VARCHAR(150);
+
+-- اطلاعات تکمیلی کلینیک
+ALTER TABLE clinics
+ADD COLUMN IF NOT EXISTS manager_name VARCHAR(150),
+ADD COLUMN IF NOT EXISTS province VARCHAR(100),
+ADD COLUMN IF NOT EXISTS city VARCHAR(100),
+ADD COLUMN IF NOT EXISTS vet_license_number VARCHAR(50);
+
+-- پشتیبانی از دامپزشکانی که حساب کاربری ندارند
+ALTER TABLE veterinarians
+ALTER COLUMN user_id DROP NOT NULL;
+
+ALTER TABLE veterinarians
+ADD COLUMN IF NOT EXISTS full_name VARCHAR(150),
+ADD COLUMN IF NOT EXISTS phone VARCHAR(30),
+ADD COLUMN IF NOT EXISTS license_number VARCHAR(50);
+
+ALTER TABLE clinic_cooperation_requests
+  ADD COLUMN IF NOT EXISTS vet_full_name VARCHAR(150),
+  ADD COLUMN IF NOT EXISTS vet_phone VARCHAR(30),
+  ADD COLUMN IF NOT EXISTS vet_specialty VARCHAR(150);
+
+ALTER TABLE clinics
+  ADD COLUMN IF NOT EXISTS manager_name VARCHAR(150),
+  ADD COLUMN IF NOT EXISTS province VARCHAR(100),
+  ADD COLUMN IF NOT EXISTS city VARCHAR(100),
+  ADD COLUMN IF NOT EXISTS vet_license_number VARCHAR(50);
+
+ALTER TABLE veterinarians
+  ALTER COLUMN user_id DROP NOT NULL;
+
+ALTER TABLE veterinarians
+  ADD COLUMN IF NOT EXISTS full_name VARCHAR(150),
+  ADD COLUMN IF NOT EXISTS phone VARCHAR(30),
+  ADD COLUMN IF NOT EXISTS license_number VARCHAR(50);
+
+
+
+
+SELECT
+    v.id AS veterinarian_id,
+    v.user_id,
+    v.full_name,
+    v.phone,
+    v.license_number,
+    v.specialty,
+    c.id AS clinic_id,
+    c.name AS clinic_name
+FROM veterinarians v
+JOIN clinics c ON c.id = v.clinic_id
+ORDER BY v.id DESC;
+
+
+  SELECT
+    id,
+    name,
+    manager_name,
+    phone,
+    province,
+    city,
+    vet_license_number,
+    created_at
+FROM clinics
+ORDER BY id DESC;

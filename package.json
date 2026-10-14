@@ -17,6 +17,7 @@
     "react-dom": "^19.2.8",
     "react-hook-form": "^7.89.0",
     "react-router-dom": "^7.18.4",
+    "react-select": "^5.10.2",
     "tailwindcss": "^4.3.3",
     "yup": "^1.7.1"
   },

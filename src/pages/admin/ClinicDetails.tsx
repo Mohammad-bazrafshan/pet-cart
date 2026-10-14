@@ -145,13 +145,25 @@ function ClinicDetails() {
           </p>
         </div>
 
-        <button
-          type="button"
-          onClick={() => navigate(`/admin/clinics/${id}/edit`)}
-          className="rounded-lg bg-amber-500 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-amber-600"
-        >
-          ویرایش کلینیک
-        </button>
+        <div className="flex flex-wrap gap-3">
+          <button
+            type="button"
+            onClick={() =>
+              navigate(`/admin/veterinarians/new?clinicId=${clinic.id}`)
+            }
+            className="rounded-lg bg-emerald-600 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-emerald-700"
+          >
+            + ثبت دامپزشک جدید
+          </button>
+
+          <button
+            type="button"
+            onClick={() => navigate(`/admin/clinics/${clinic.id}/edit`)}
+            className="rounded-lg bg-amber-500 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-amber-600"
+          >
+            ویرایش کلینیک
+          </button>
+        </div>
       </div>
 
       {/* اطلاعات کلینیک */}
@@ -191,10 +203,10 @@ function ClinicDetails() {
         </div>
       </section>
 
-      {/* اتصال دامپزشک */}
+      {/* اتصال دامپزشک دارای حساب کاربری */}
       <section className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
         <h3 className="mb-4 text-lg font-bold text-gray-800">
-          اتصال دامپزشک به کلینیک
+          اتصال دامپزشک دارای حساب کاربری
         </h3>
 
         <div className="grid gap-4 md:grid-cols-2">
@@ -305,7 +317,7 @@ function ClinicDetails() {
                     </td>
 
                     <td className="px-4 py-4 text-gray-600">
-                      {vet.email}
+                      {vet.email || "حساب کاربری ندارد"}
                     </td>
 
                     <td className="px-4 py-4 text-gray-600">
