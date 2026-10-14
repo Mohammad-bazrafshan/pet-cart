@@ -7,8 +7,19 @@ export const api = axios.create({
   },
 });
 
-
 api.interceptors.request.use((config) => {
+  api.interceptors.request.use((config) => {
+  const token = localStorage.getItem("petcard.token");
+
+  console.log("Request URL:", config.url);
+  console.log("Token exists:", Boolean(token));
+
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+
+  return config;
+});
   const token = localStorage.getItem("petcard.token");
 
   if (token) {
@@ -17,7 +28,6 @@ api.interceptors.request.use((config) => {
 
   return config;
 });
-
 
 export function getApiErrorMessage(error: unknown): string {
   if (axios.isAxiosError<{ message?: string | string[] }>(error)) {
@@ -33,13 +43,3 @@ export function getApiErrorMessage(error: unknown): string {
 
   return "خطای غیرمنتظره‌ای رخ داد. دوباره تلاش کن.";
 }
-api.interceptors.request.use((config) => {
-  const token = localStorage.getItem("petcard.token");
-
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
-
-  return config;
-});
-

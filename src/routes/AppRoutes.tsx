@@ -1,4 +1,3 @@
-
 import { createBrowserRouter } from "react-router-dom";
 import EditPet from "../pages/owner/EditPet";
 import Landing from "../pages/Landing";
@@ -29,7 +28,7 @@ import EditClinic from "../pages/admin/EditClinic";
 // صفحه جدید همکاری کلینیک
 import ClinicCooperationPage from "../pages/ClinicCooperationPage";
 import CooperationRequests from "../pages/admin/CooperationRequests";
-
+import CreateVeterinarian from "../pages/admin/CreateVeterinarian";
 const router = createBrowserRouter([
   {
     element: <RoleProtectedRoute allowedRoles={["veterinarian"]} />,
@@ -79,8 +78,12 @@ const router = createBrowserRouter([
             element: <EditClinic />,
           },
           {
-            path:"cooperation-requests",
-            element:<CooperationRequests />
+            path: "cooperation-requests",
+            element: <CooperationRequests />,
+          },
+          {
+            path: "veterinarians/new",
+            element: <CreateVeterinarian />,
           },
         ],
       },

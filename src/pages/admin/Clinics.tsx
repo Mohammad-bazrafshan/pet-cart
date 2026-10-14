@@ -67,6 +67,7 @@ function AdminClinics() {
         >
           + ایجاد کلینیک جدید
         </button>
+        
       </div>
 
       {/* جدول کلینیک‌ها */}
