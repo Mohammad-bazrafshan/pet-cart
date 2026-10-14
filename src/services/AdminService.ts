@@ -50,6 +50,8 @@ export interface CreateClinicData {
   phone?: string;
   address?: string;
   description?: string;
+  province?: string;
+  city?: string;
 }
 
 export interface CreateVeterinarianData {

@@ -10,6 +10,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@code-plate/iran-cities": "^1.2.0",
     "@hookform/resolvers": "^5.9.1",
     "@tailwindcss/vite": "^4.3.3",
     "axios": "^1.20.0",
