@@ -76,6 +76,30 @@ const navItems = [
       </svg>
     ),
   },
+  
+  {
+    title: "درخواست‌های همکاری",
+    path: "/clinic/veterinarian-applications",
+    icon: (
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        width="20"
+        height="20"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.75"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
+        <circle cx="12" cy="8" r="4" />
+        <path d="M16 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+        <path d="M19 8v6" />
+        <path d="M22 11h-6" />
+      </svg>
+    ),
+  },
+
 ];
 
 function ClinicLayout() {
