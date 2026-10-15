@@ -11,6 +11,7 @@ import veterinariansRouter from "./routes/veterinarians.routes";
 import appointmentsRouter from "./routes/appointments.routes";
 import remindersRouter from "./routes/reminders.routes";
 import adminRouter from "./routes/admin.routes";
+import veterinarianCooperationRoutes from "./routes/veterinarianCooperation.routes";
 dotenv.config();
 const app = express();
 
@@ -30,6 +31,10 @@ app.use("/api", vaccinationsRouter);
 app.use("/api/clinics", clinicsRouter);
 app.use("/api/veterinarians", veterinariansRouter);
 app.use("/api/appointments", appointmentsRouter);
+app.use(
+  "/api/veterinarian-cooperation",
+  veterinarianCooperationRoutes,
+);
 app.use("/api/reminders", remindersRouter);app.get("/", (req, res) => {
   res.json({
     message: "PetCard Backend is running!",

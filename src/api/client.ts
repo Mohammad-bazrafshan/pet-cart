@@ -1,3 +1,4 @@
+
 import axios from "axios";
 
 export const api = axios.create({
@@ -8,18 +9,6 @@ export const api = axios.create({
 });
 
 api.interceptors.request.use((config) => {
-  api.interceptors.request.use((config) => {
-  const token = localStorage.getItem("petcard.token");
-
-  console.log("Request URL:", config.url);
-  console.log("Token exists:", Boolean(token));
-
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
-
-  return config;
-});
   const token = localStorage.getItem("petcard.token");
 
   if (token) {
@@ -33,8 +22,13 @@ export function getApiErrorMessage(error: unknown): string {
   if (axios.isAxiosError<{ message?: string | string[] }>(error)) {
     const message = error.response?.data?.message;
 
-    if (Array.isArray(message)) return message.join("، ");
-    if (message) return message;
+    if (Array.isArray(message)) {
+      return message.join("، ");
+    }
+
+    if (message) {
+      return message;
+    }
 
     if (!error.response) {
       return "ارتباط با سرور برقرار نشد. از روشن بودن بک‌اند مطمئن شو.";

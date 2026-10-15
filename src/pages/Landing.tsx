@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import { useNavigate } from "react-router-dom";
-
+import VeterinarianCooperationSection from "../components/common/VeterinarianCooperationSection";
 const features = [
   {
     icon: "📋",
@@ -41,7 +41,6 @@ const steps = [
 ];
 
 function PawIcon({ className = "h-7 w-7" }: { className?: string }) {
-
   return (
     <svg
       viewBox="0 0 64 64"
@@ -59,7 +58,7 @@ function PawIcon({ className = "h-7 w-7" }: { className?: string }) {
 }
 
 export default function Landing() {
-    const navigate = useNavigate();
+  const navigate = useNavigate();
 
   return (
     <main
@@ -88,6 +87,12 @@ export default function Landing() {
           </Link>
 
           <nav className="hidden items-center gap-8 text-sm font-medium text-slate-600 md:flex">
+            <a
+              href="#veterinarian-cooperation"
+              className="transition hover:text-blue-600"
+            >
+              همکاری دامپزشکان
+            </a>
             <a href="#features" className="transition hover:text-blue-600">
               امکانات
             </a>
@@ -354,10 +359,18 @@ export default function Landing() {
               </p>
             </div>
 
-            <button onClick={() => navigate("/clinic-cooperation")}               className="shrink-0 rounded-2xl bg-white px-7 py-4 font-bold text-blue-700 shadow-lg transition hover:-translate-y-0.5 hover:bg-blue-50"
->
+            <button
+              onClick={() => navigate("/clinic-cooperation")}
+              className="font-bold shrink-0 rounded-2xl bg-white px-7 py-4 font-bold text-blue-700 shadow-lg transition hover:-translate-y-0.5 hover:bg-blue-50"
+            >
               درخواست همکاری کلینیک
             </button>
+            <Link
+              to="/veterinarian-cooperation"
+              className="inline-flex items-center justify-center rounded-xl bg-white px-6 py-3 font-bold text-blue-700 transition hover:bg-blue-100"
+            >
+              <span className="text-blue-700"> درخواست همکاری با کلینیک‌ها</span>
+            </Link>
           </div>
         </div>
       </section>

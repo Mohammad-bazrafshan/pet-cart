@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { getCities, getProvincesList } from "@code-plate/iran-cities";
 import axios from "axios";
 import Select from "react-select";
 import { Controller, useForm } from "react-hook-form";
@@ -25,38 +26,21 @@ type CooperationForm = {
   licenseDocument: File | null;
 };
 
-// نمونه شهرها؛ فهرست کامل را بعداً اضافه می‌کنیم.
-const cityOptions: Record<string, SelectOption[]> = {
-  مازندران: [
-    { value: "بابل", label: "بابل" },
-    { value: "ساری", label: "ساری" },
-    { value: "آمل", label: "آمل" },
-    { value: "بابلسر", label: "بابلسر" },
-    { value: "قائم‌شهر", label: "قائم‌شهر" },
-    { value: "تنکابن", label: "تنکابن" },
-  ],
-  تهران: [
-    { value: "تهران", label: "تهران" },
-    { value: "شهریار", label: "شهریار" },
-    { value: "ری", label: "ری" },
-    { value: "عبدل آباد", label: "عبدل آباد" },
-  ],
-  گیلان: [
-    { value: "رشت", label: "رشت" },
-    { value: "لاهیجان", label: "لاهیجان" },
-    { value: "انزلی", label: "بندر انزلی" },
-  ],
-};
-
-const provinceOptions: SelectOption[] = [
-  { value: "مازندران", label: "مازندران" },
-  { value: "تهران", label: "تهران" },
-  { value: "گیلان", label: "گیلان" },
-];
+// دریافت فهرست استان‌های ایران از کتابخانه
+const provinceOptions: SelectOption[] = getProvincesList().map(
+  (province) => ({
+    value: province.en,
+    label: province.fa,
+  }),
+);
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
 
-const allowedTypes = ["application/pdf", "image/jpeg", "image/png"];
+const allowedTypes = [
+  "application/pdf",
+  "image/jpeg",
+  "image/png",
+];
 
 const schema: yup.ObjectSchema<CooperationForm> = yup.object({
   clinicName: yup
@@ -114,7 +98,7 @@ const schema: yup.ObjectSchema<CooperationForm> = yup.object({
   description: yup
     .string()
     .trim()
-    .max(2000, "توضیحات نباید بیشتر از ۲۰۰۰ کاراکتر باشد")
+    .max(2000, "توضیحات نباید بیشتر از ۲۰۰۰ کاراکتر باشد.")
     .defined(),
 
   licenseDocument: yup
@@ -126,17 +110,20 @@ const schema: yup.ObjectSchema<CooperationForm> = yup.object({
       "حجم فایل نباید بیشتر از ۵ مگابایت باشد.",
       (file) => !file || file.size <= MAX_FILE_SIZE,
     )
-
     .test(
       "file-type",
       "فقط فایل PDF، JPG یا PNG مجاز است.",
       (file) => !file || allowedTypes.includes(file.type),
     ),
+
   vetPhone: yup
     .string()
     .trim()
     .required("شماره تماس دامپزشک الزامی است.")
-    .matches(/^(?:(?:\+|00)98|0)?9\d{9}$/, "شماره موبایل معتبر وارد کنید."),
+    .matches(
+      /^(?:(?:\+|00)98|0)?9\d{9}$/,
+      "شماره موبایل معتبر وارد کنید.",
+    ),
 
   vetSpecialty: yup
     .string()
@@ -159,6 +146,7 @@ const selectStyles = {
       borderColor: "#0d9488",
     },
   }),
+
   menu: (base: object) => ({
     ...base,
     zIndex: 20,
@@ -175,12 +163,12 @@ export default function ClinicCooperationPage() {
     control,
     watch,
     setValue,
-    setError,
     clearErrors,
     reset,
     formState: { errors, isSubmitting },
   } = useForm<CooperationForm>({
     resolver: yupResolver(schema),
+
     defaultValues: {
       clinicName: "",
       managerName: "",
@@ -199,6 +187,14 @@ export default function ClinicCooperationPage() {
   const selectedProvince = watch("province");
   const selectedFile = watch("licenseDocument");
 
+  // دریافت شهرهای استان انتخاب‌شده
+  const cityOptions: SelectOption[] = selectedProvince
+    ? getCities(selectedProvince.value).map((city) => ({
+        value: city.en,
+        label: city.fa,
+      }))
+    : [];
+
   const onSubmit: SubmitHandler<CooperationForm> = async (data) => {
     setSuccess("");
     setServerError("");
@@ -207,12 +203,18 @@ export default function ClinicCooperationPage() {
 
     formData.append("clinicName", data.clinicName.trim());
     formData.append("managerName", data.managerName.trim());
-    formData.append("vetLicenseNumber", data.vetLicenseNumber.trim());
+    formData.append(
+      "vetLicenseNumber",
+      data.vetLicenseNumber.trim(),
+    );
     formData.append("vetPhone", data.vetPhone.trim());
     formData.append("vetSpecialty", data.vetSpecialty.trim());
     formData.append("phone", data.phone.trim());
-    formData.append("province", data.province!.value);
-    formData.append("city", data.city!.value);
+
+    // ارسال نام فارسی استان و شهر
+    formData.append("province", data.province!.label);
+    formData.append("city", data.city!.label);
+
     formData.append("address", data.address.trim());
     formData.append("description", data.description.trim());
     formData.append("licenseDocument", data.licenseDocument!);
@@ -228,6 +230,15 @@ export default function ClinicCooperationPage() {
       );
 
       reset();
+
+      // پاک کردن فایل انتخاب‌شده از ورودی فایل
+      const fileInput = document.getElementById(
+        "licenseDocument",
+      ) as HTMLInputElement | null;
+
+      if (fileInput) {
+        fileInput.value = "";
+      }
     } catch (error) {
       if (axios.isAxiosError(error)) {
         setServerError(
@@ -259,20 +270,33 @@ export default function ClinicCooperationPage() {
           </h1>
 
           <p className="mt-5 text-sm leading-8 text-white/85 sm:text-base">
-            اطلاعات کلینیک و دامپزشک مسئول را وارد کنید. درخواست شما پس از ثبت،
-            توسط ادمین بررسی خواهد شد.
+            اطلاعات کلینیک و دامپزشک مسئول را وارد کنید. درخواست
+            شما پس از ثبت، توسط ادمین بررسی خواهد شد.
           </p>
 
           <div className="mt-8 space-y-5">
             {[
-              ["ثبت اطلاعات", "مشخصات کلینیک و دامپزشک را وارد کنید."],
-              ["ارسال مدرک", "پروانه فعالیت را برای بررسی بارگذاری کنید."],
-              ["بررسی ادمین", "پس از تأیید، مراحل شروع همکاری انجام می‌شود."],
+              [
+                "ثبت اطلاعات",
+                "مشخصات کلینیک و دامپزشک را وارد کنید.",
+              ],
+              [
+                "ارسال مدرک",
+                "پروانه فعالیت را برای بررسی بارگذاری کنید.",
+              ],
+              [
+                "بررسی ادمین",
+                "پس از تأیید، مراحل شروع همکاری انجام می‌شود.",
+              ],
             ].map(([title, description]) => (
-              <div key={title} className="flex items-start gap-3">
+              <div
+                key={title}
+                className="flex items-start gap-3"
+              >
                 <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-white/15">
                   ✓
                 </span>
+
                 <div>
                   <h2 className="font-bold">{title}</h2>
                   <p className="mt-1 text-sm leading-6 text-white/75">
@@ -286,7 +310,10 @@ export default function ClinicCooperationPage() {
 
         {/* فرم */}
         <section className="rounded-3xl border border-slate-100 bg-white p-6 shadow-sm sm:p-9">
-          <h2 className="text-2xl font-extrabold">درخواست همکاری کلینیک</h2>
+          <h2 className="text-2xl font-extrabold">
+            درخواست همکاری کلینیک
+          </h2>
+
           <p className="mb-7 mt-2 text-sm leading-7 text-slate-500">
             تمام فیلدهای ستاره‌دار الزامی هستند.
           </p>
@@ -314,6 +341,7 @@ export default function ClinicCooperationPage() {
             className="space-y-6"
             noValidate
           >
+            {/* اطلاعات کلینیک */}
             <div>
               <h3 className="mb-4 border-b border-slate-100 pb-3 font-bold">
                 اطلاعات کلینیک
@@ -324,12 +352,14 @@ export default function ClinicCooperationPage() {
                   <label className="mb-2 block text-sm font-semibold">
                     نام کلینیک *
                   </label>
+
                   <input
                     {...register("clinicName")}
                     className={inputClass}
                     placeholder="مثلاً کلینیک مهر"
                     maxLength={150}
                   />
+
                   <FieldError message={errors.clinicName?.message} />
                 </div>
 
@@ -337,6 +367,7 @@ export default function ClinicCooperationPage() {
                   <label className="mb-2 block text-sm font-semibold">
                     شماره تماس کلینیک *
                   </label>
+
                   <input
                     {...register("phone")}
                     type="tel"
@@ -344,25 +375,33 @@ export default function ClinicCooperationPage() {
                     className={inputClass}
                     placeholder="09123456789"
                   />
+
                   <FieldError message={errors.phone?.message} />
                 </div>
 
+                {/* انتخاب استان */}
                 <div>
                   <label className="mb-2 block text-sm font-semibold">
                     استان *
                   </label>
+
                   <Controller
                     name="province"
                     control={control}
                     render={({ field }) => (
                       <Select
-                        {...field}
+                        name={field.name}
+                        ref={field.ref}
                         options={provinceOptions}
                         value={field.value}
+                        onBlur={field.onBlur}
                         onChange={(option) => {
                           field.onChange(option);
+
+                          // پاک کردن شهر قبلی هنگام تغییر استان
                           setValue("city", null, {
                             shouldValidate: true,
+                            shouldDirty: true,
                           });
                         }}
                         placeholder="جست‌وجو و انتخاب استان"
@@ -372,25 +411,26 @@ export default function ClinicCooperationPage() {
                       />
                     )}
                   />
+
                   <FieldError message={errors.province?.message} />
                 </div>
 
+                {/* انتخاب شهر */}
                 <div>
                   <label className="mb-2 block text-sm font-semibold">
                     شهر *
                   </label>
+
                   <Controller
                     name="city"
                     control={control}
                     render={({ field }) => (
                       <Select
-                        {...field}
-                        options={
-                          selectedProvince
-                            ? cityOptions[selectedProvince.value] || []
-                            : []
-                        }
+                        name={field.name}
+                        ref={field.ref}
+                        options={cityOptions}
                         value={field.value}
+                        onBlur={field.onBlur}
                         onChange={field.onChange}
                         isDisabled={!selectedProvince}
                         placeholder={
@@ -404,6 +444,7 @@ export default function ClinicCooperationPage() {
                       />
                     )}
                   />
+
                   <FieldError message={errors.city?.message} />
                 </div>
               </div>
@@ -412,16 +453,19 @@ export default function ClinicCooperationPage() {
                 <label className="mb-2 block text-sm font-semibold">
                   آدرس دقیق کلینیک *
                 </label>
+
                 <textarea
                   {...register("address")}
                   className={`${inputClass} min-h-24 resize-y`}
                   placeholder="خیابان، کوچه، پلاک و سایر جزئیات آدرس"
                   maxLength={500}
                 />
+
                 <FieldError message={errors.address?.message} />
               </div>
             </div>
 
+            {/* اطلاعات دامپزشک */}
             <div>
               <h3 className="mb-4 border-b border-slate-100 pb-3 font-bold">
                 اطلاعات دامپزشک مسئول
@@ -432,12 +476,14 @@ export default function ClinicCooperationPage() {
                   <label className="mb-2 block text-sm font-semibold">
                     نام و نام خانوادگی دامپزشک *
                   </label>
+
                   <input
                     {...register("managerName")}
                     className={inputClass}
                     placeholder="نام دامپزشک مسئول"
                     maxLength={150}
                   />
+
                   <FieldError message={errors.managerName?.message} />
                 </div>
 
@@ -445,6 +491,7 @@ export default function ClinicCooperationPage() {
                   <label className="mb-2 block text-sm font-semibold">
                     کد نظام پزشکی *
                   </label>
+
                   <input
                     {...register("vetLicenseNumber")}
                     className={inputClass}
@@ -452,12 +499,17 @@ export default function ClinicCooperationPage() {
                     placeholder="کد نظام پزشکی"
                     maxLength={50}
                   />
-                  <FieldError message={errors.vetLicenseNumber?.message} />
+
+                  <FieldError
+                    message={errors.vetLicenseNumber?.message}
+                  />
                 </div>
+
                 <div>
                   <label className="mb-2 block text-sm font-semibold">
                     شماره موبایل دامپزشک *
                   </label>
+
                   <input
                     {...register("vetPhone")}
                     type="tel"
@@ -466,6 +518,7 @@ export default function ClinicCooperationPage() {
                     placeholder="09123456789"
                     maxLength={15}
                   />
+
                   <FieldError message={errors.vetPhone?.message} />
                 </div>
 
@@ -473,17 +526,20 @@ export default function ClinicCooperationPage() {
                   <label className="mb-2 block text-sm font-semibold">
                     تخصص دامپزشک *
                   </label>
+
                   <input
                     {...register("vetSpecialty")}
                     className={inputClass}
                     placeholder="مثلاً دامپزشکی عمومی"
                     maxLength={150}
                   />
+
                   <FieldError message={errors.vetSpecialty?.message} />
                 </div>
               </div>
             </div>
 
+            {/* مدارک و توضیحات */}
             <div>
               <h3 className="mb-4 border-b border-slate-100 pb-3 font-bold">
                 مدارک و توضیحات
@@ -522,18 +578,22 @@ export default function ClinicCooperationPage() {
                 )}
               </div>
 
-              <FieldError message={errors.licenseDocument?.message} />
+              <FieldError
+                message={errors.licenseDocument?.message}
+              />
 
               <div className="mt-5">
                 <label className="mb-2 block text-sm font-semibold">
                   توضیحات تکمیلی
                 </label>
+
                 <textarea
                   {...register("description")}
                   className={`${inputClass} min-h-28 resize-y`}
                   placeholder="خدمات کلینیک و زمینه همکاری..."
                   maxLength={2000}
                 />
+
                 <FieldError message={errors.description?.message} />
               </div>
             </div>
@@ -543,7 +603,9 @@ export default function ClinicCooperationPage() {
               disabled={isSubmitting}
               className="w-full rounded-xl bg-teal-700 px-5 py-3.5 font-bold text-white transition hover:bg-teal-800 focus:outline-none focus:ring-4 focus:ring-teal-700/20 disabled:cursor-not-allowed disabled:opacity-60"
             >
-              {isSubmitting ? "در حال ارسال درخواست..." : "ثبت درخواست همکاری"}
+              {isSubmitting
+                ? "در حال ارسال درخواست..."
+                : "ثبت درخواست همکاری"}
             </button>
 
             <p className="text-center text-xs leading-6 text-slate-400">

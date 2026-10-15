@@ -29,6 +29,8 @@ import EditClinic from "../pages/admin/EditClinic";
 import ClinicCooperationPage from "../pages/ClinicCooperationPage";
 import CooperationRequests from "../pages/admin/CooperationRequests";
 import CreateVeterinarian from "../pages/admin/CreateVeterinarian";
+import VeterinarianCooperation from "../pages/VeterinarianCooperation";
+import VeterinarianApplications from "../pages/clinic/VeterinarianApplications";
 const router = createBrowserRouter([
   {
     element: <RoleProtectedRoute allowedRoles={["veterinarian"]} />,
@@ -49,6 +51,10 @@ const router = createBrowserRouter([
           {
             path: "patients/:id",
             element: <ClinicPatientProfile />,
+          },
+          {
+            path: "veterinarian-applications",
+            element: <VeterinarianApplications />,
           },
         ],
       },
@@ -108,6 +114,10 @@ const router = createBrowserRouter([
   {
     path: "/register",
     element: <Register />,
+  },
+  {
+    path: "/veterinarian-cooperation",
+    element: <VeterinarianCooperation />,
   },
 
   {
