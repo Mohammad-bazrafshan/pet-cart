@@ -1,5 +1,6 @@
 
 import { Router } from "express";
+import bcrypt from "bcrypt";
 import pool from "../db";
 import {
   authenticateToken,
@@ -17,6 +18,8 @@ router.post("/applications", async (req, res) => {
   try {
     const {
       fullName,
+      email,
+      password,
       phone,
       licenseNumber,
       specialty,
@@ -29,6 +32,8 @@ router.post("/applications", async (req, res) => {
 
     const requiredFields = [
       fullName,
+      email,
+      password,
       phone,
       licenseNumber,
       specialty,
@@ -49,6 +54,7 @@ router.post("/applications", async (req, res) => {
 
     const fields = [
       { value: fullName, max: 150 },
+      { value: email, max: 254 },
       { value: phone, max: 30 },
       { value: licenseNumber, max: 50 },
       { value: specialty, max: 150 },
@@ -69,6 +75,55 @@ router.post("/applications", async (req, res) => {
         message: "طول یا قالب یکی از فیلدهای واردشده معتبر نیست.",
       });
     }
+
+    const normalizedEmail = email.trim().toLowerCase();
+    const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+    if (!emailPattern.test(normalizedEmail)) {
+      return res.status(400).json({
+        message: "لطفاً یک ایمیل معتبر وارد کنید.",
+      });
+    }
+
+    if (
+      typeof password !== "string" ||
+      password.length < 8 ||
+      password.length > 72
+    ) {
+      return res.status(400).json({
+        message: "رمز عبور باید حداقل ۸ و حداکثر ۷۲ کاراکتر باشد.",
+      });
+    }
+
+    const existingUser = await pool.query(
+      "SELECT id FROM users WHERE LOWER(email) = $1 LIMIT 1",
+      [normalizedEmail],
+    );
+
+    if (existingUser.rows.length > 0) {
+      return res.status(409).json({
+        message: "با این ایمیل قبلاً حساب کاربری ساخته شده است.",
+      });
+    }
+
+    const existingApplication = await pool.query(
+      `
+      SELECT id
+      FROM veterinarian_applications
+      WHERE LOWER(email) = $1 AND status = 'pending'
+      LIMIT 1
+      `,
+      [normalizedEmail],
+    );
+
+    if (existingApplication.rows.length > 0) {
+      return res.status(409).json({
+        message: "با این ایمیل یک درخواست همکاری در انتظار بررسی وجود دارد.",
+      });
+    }
+
+    // رمز عبور خام هرگز در دیتابیس ذخیره نمی‌شود.
+    const passwordHash = await bcrypt.hash(password, 12);
 
     const selectedClinicId = Number(clinicId);
 
@@ -100,6 +155,8 @@ router.post("/applications", async (req, res) => {
       `
       INSERT INTO veterinarian_applications (
         full_name,
+        email,
+        password_hash,
         phone,
         license_number,
         specialty,
@@ -110,10 +167,11 @@ router.post("/applications", async (req, res) => {
         status,
         clinic_id
       )
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'pending', $9)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, 'pending', $11)
       RETURNING
         id,
         full_name,
+        email,
         phone,
         license_number,
         specialty,
@@ -127,6 +185,8 @@ router.post("/applications", async (req, res) => {
       `,
       [
         fullName.trim(),
+        normalizedEmail,
+        passwordHash,
         phone.trim(),
         licenseNumber.trim(),
         specialty.trim(),
@@ -200,6 +260,7 @@ router.get(
         SELECT
           a.id,
           a.full_name,
+          a.email,
           a.phone,
           a.license_number,
           a.specialty,
@@ -364,7 +425,47 @@ router.patch(
           });
         }
 
-        // دامپزشک متقاضی هنوز حساب ندارد؛ user_id برابر NULL می‌ماند.
+        if (!application.email || !application.password_hash) {
+          await client.query("ROLLBACK");
+          transactionStarted = false;
+
+          return res.status(400).json({
+            message:
+              "این درخواست اطلاعات حساب کاربری ندارد. لطفاً از متقاضی بخواهید دوباره درخواست ثبت کند.",
+          });
+        }
+
+        const existingUserByEmail = await client.query(
+          "SELECT id FROM users WHERE LOWER(email) = LOWER($1) LIMIT 1",
+          [application.email],
+        );
+
+        if (existingUserByEmail.rows.length > 0) {
+          await client.query("ROLLBACK");
+          transactionStarted = false;
+
+          return res.status(409).json({
+            message:
+              "این ایمیل قبلاً برای حساب دیگری استفاده شده است؛ درخواست قابل تأیید نیست.",
+          });
+        }
+
+        // حساب و عضویت کلینیک در یک تراکنش ساخته می‌شوند.
+        const userResult = await client.query(
+          `
+          INSERT INTO users (name, email, password, role)
+          VALUES ($1, $2, $3, 'veterinarian')
+          RETURNING id
+          `,
+          [
+            application.full_name,
+            application.email,
+            application.password_hash,
+          ],
+        );
+
+        const newUserId = userResult.rows[0].id;
+
         await client.query(
           `
           INSERT INTO veterinarians (
@@ -375,9 +476,10 @@ router.patch(
             phone,
             license_number
           )
-          VALUES (NULL, $1, $2, $3, $4, $5)
+          VALUES ($1, $2, $3, $4, $5, $6)
           `,
           [
+            newUserId,
             application.clinic_id,
             application.specialty,
             application.full_name,
@@ -390,9 +492,23 @@ router.patch(
       const updatedResult = await client.query(
         `
         UPDATE veterinarian_applications
-        SET status = $1
+        SET status = $1,
+            password_hash = NULL
         WHERE id = $2
-        RETURNING *
+        RETURNING
+          id,
+          full_name,
+          email,
+          phone,
+          license_number,
+          specialty,
+          province,
+          city,
+          work_type,
+          description,
+          status,
+          clinic_id,
+          created_at
         `,
         [status, applicationId],
       );
@@ -403,7 +519,7 @@ router.patch(
       return res.json({
         message:
           status === "approved"
-            ? "درخواست تأیید شد و دامپزشک به کلینیک اضافه شد."
+            ? "درخواست تأیید شد؛ حساب دامپزشک ساخته شد و به کلینیک اضافه شد."
             : "درخواست همکاری رد شد.",
         application: updatedResult.rows[0],
       });

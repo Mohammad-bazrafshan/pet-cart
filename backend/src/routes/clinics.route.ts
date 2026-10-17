@@ -9,6 +9,7 @@ import multer from "multer";
 import path from "node:path";
 import fs from "node:fs";
 import { randomUUID } from "node:crypto";
+import bcrypt from "bcryptjs";
 
 const router = Router();
 
@@ -44,6 +45,7 @@ const upload = multer({
     fileSize: 5 * 1024 * 1024,
     files: 1,
   },
+
   fileFilter: (_req, file, callback) => {
     const extension = path.extname(file.originalname).toLowerCase();
 
@@ -60,12 +62,23 @@ const upload = multer({
   },
 });
 
+function removeUploadedFile(filePath?: string) {
+  if (filePath) {
+    fs.unlink(filePath, (error) => {
+      if (error && error.code !== "ENOENT") {
+        console.error("Remove uploaded file error:", error);
+      }
+    });
+  }
+}
+
 /**
  * POST /api/clinics/cooperation-requests
- * ثبت درخواست همکاری کلینیک
+ * ثبت درخواست همکاری کلینیک به همراه اطلاعات حساب کاربری
  */
 router.post(
   "/cooperation-requests",
+
   (req, res, next) => {
     upload.single("licenseDocument")(req, res, (error) => {
       if (error) {
@@ -80,12 +93,14 @@ router.post(
       next();
     });
   },
+
   async (req, res) => {
     try {
       const {
         clinicName,
         managerName,
         vetLicenseNumber,
+        vetFullName,
         vetPhone,
         vetSpecialty,
         phone,
@@ -93,12 +108,16 @@ router.post(
         city,
         address,
         description,
+        email,
+        password,
       } = req.body;
 
+      // بررسی فیلدهای الزامی
       const requiredFields = [
         clinicName,
         managerName,
         vetLicenseNumber,
+        vetFullName,
         vetPhone,
         vetSpecialty,
         phone,
@@ -110,24 +129,58 @@ router.post(
       if (
         !requiredFields.every(
           (value) =>
-            typeof value === "string" && value.trim().length > 0,
+            typeof value === "string" &&
+            value.trim().length > 0,
         )
       ) {
+        removeUploadedFile(req.file?.path);
+
         return res.status(400).json({
           message: "لطفاً تمام فیلدهای الزامی را تکمیل کنید.",
         });
       }
 
+      // اعتبارسنجی ایمیل
+      if (
+        typeof email !== "string" ||
+        !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim()) ||
+        email.trim().length > 254
+      ) {
+        removeUploadedFile(req.file?.path);
+
+        return res.status(400).json({
+          message: "ایمیل معتبر وارد کنید.",
+        });
+      }
+
+      const normalizedEmail = email.trim().toLowerCase();
+
+      // اعتبارسنجی رمز عبور
+      if (
+        typeof password !== "string" ||
+        password.length < 8 ||
+        password.length > 72
+      ) {
+        removeUploadedFile(req.file?.path);
+
+        return res.status(400).json({
+          message: "رمز عبور باید بین ۸ تا ۷۲ کاراکتر باشد.",
+        });
+      }
+
+      // اعتبارسنجی فایل پروانه
       if (!req.file) {
         return res.status(400).json({
           message: "بارگذاری پروانه فعالیت کلینیک الزامی است.",
         });
       }
 
+      // اعتبارسنجی طول فیلدها
       const fields = [
         { value: clinicName, max: 150 },
         { value: managerName, max: 150 },
         { value: vetLicenseNumber, max: 50 },
+        { value: vetFullName, max: 150 },
         { value: vetPhone, max: 30 },
         { value: vetSpecialty, max: 150 },
         { value: phone, max: 30 },
@@ -145,7 +198,7 @@ router.post(
         (typeof description === "string" &&
           description.trim().length > 2000)
       ) {
-        fs.unlink(req.file.path, () => {});
+        removeUploadedFile(req.file.path);
 
         return res.status(400).json({
           message: "طول یکی از فیلدهای واردشده بیش از حد مجاز است.",
@@ -154,18 +207,50 @@ router.post(
 
       if (
         description !== undefined &&
+        description !== null &&
         typeof description !== "string"
       ) {
-        fs.unlink(req.file.path, () => {});
+        removeUploadedFile(req.file.path);
 
         return res.status(400).json({
           message: "فرمت توضیحات معتبر نیست.",
         });
       }
 
+      // بررسی ایمیل تکراری در حساب‌های موجود و درخواست‌های قبلی
+      const existingEmail = await pool.query(
+        `
+        SELECT id
+        FROM users
+        WHERE LOWER(email) = $1
+
+        UNION ALL
+
+        SELECT id
+        FROM clinic_cooperation_requests
+        WHERE LOWER(email) = $1
+
+        LIMIT 1
+        `,
+        [normalizedEmail],
+      );
+
+      if (existingEmail.rowCount && existingEmail.rowCount > 0) {
+        removeUploadedFile(req.file.path);
+
+        return res.status(409).json({
+          message:
+            "با این ایمیل قبلاً حساب کاربری یا درخواست همکاری ثبت شده است.",
+        });
+      }
+
+      // ذخیره نام فایل؛ فایل خارج از پوشه عمومی قرار دارد
       const documentPath = path
         .relative(uploadDirectory, req.file.path)
         .replace(/\\/g, "/");
+
+      // هش کردن رمز عبور؛ رمز خام ذخیره نمی‌شود
+      const passwordHash = await bcrypt.hash(password, 12);
 
       const result = await pool.query(
         `
@@ -182,11 +267,14 @@ router.post(
           address,
           description,
           license_document_path,
-          status
+          status,
+          email,
+          password_hash
         )
         VALUES (
-          $1, $2, $3, $4, $5, $6,
-          $7, $8, $9, $10, $11, $12, 'pending'
+          $1, $2, $3, $4, $5, $6, $7,
+          $8, $9, $10, $11, $12,
+          'pending', $13, $14
         )
         RETURNING
           id,
@@ -208,26 +296,29 @@ router.post(
           clinicName.trim(),
           managerName.trim(),
           vetLicenseNumber.trim(),
-          managerName.trim(),
+          vetFullName.trim(),
           vetPhone.trim(),
           vetSpecialty.trim(),
           phone.trim(),
           province.trim(),
           city.trim(),
           address.trim(),
-          description?.trim() || null,
+          typeof description === "string"
+            ? description.trim() || null
+            : null,
           documentPath,
+          normalizedEmail,
+          passwordHash,
         ],
       );
 
       return res.status(201).json({
-        message: "درخواست همکاری با موفقیت ثبت شد.",
+        message:
+          "درخواست همکاری با موفقیت ثبت شد و پس از بررسی ادمین، نتیجه اعلام می‌شود.",
         request: result.rows[0],
       });
     } catch (error) {
-      if (req.file) {
-        fs.unlink(req.file.path, () => {});
-      }
+      removeUploadedFile(req.file?.path);
 
       console.error(
         "Create clinic cooperation request error:",
@@ -297,7 +388,7 @@ router.get("/:id", authenticateToken, async (req: AuthRequest, res) => {
 });
 
 // POST /api/clinics
-// ساخت کلینیک از مسیر فعلی برنامه حفظ شده است.
+// حفظ مسیر فعلی ساخت کلینیک
 router.post("/", authenticateToken, async (req: AuthRequest, res) => {
   try {
     const { name, phone, address, description } = req.body;
@@ -317,7 +408,9 @@ router.post("/", authenticateToken, async (req: AuthRequest, res) => {
       [
         name.trim(),
         typeof phone === "string" ? phone.trim() || null : null,
-        typeof address === "string" ? address.trim() || null : null,
+        typeof address === "string"
+          ? address.trim() || null
+          : null,
         typeof description === "string"
           ? description.trim() || null
           : null,

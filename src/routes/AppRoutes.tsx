@@ -24,7 +24,6 @@ import AdminClinics from "../pages/admin/Clinics";
 import AdminClinicDetails from "../pages/admin/ClinicDetails";
 import CreateClinic from "../pages/admin/CreateClinic";
 import EditClinic from "../pages/admin/EditClinic";
-
 // صفحه جدید همکاری کلینیک
 import ClinicCooperationPage from "../pages/ClinicCooperationPage";
 import CooperationRequests from "../pages/admin/CooperationRequests";

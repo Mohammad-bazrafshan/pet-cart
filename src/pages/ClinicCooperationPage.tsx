@@ -24,23 +24,19 @@ type CooperationForm = {
   address: string;
   description: string;
   licenseDocument: File | null;
+  email: string;
+  password: string;
 };
 
 // دریافت فهرست استان‌های ایران از کتابخانه
-const provinceOptions: SelectOption[] = getProvincesList().map(
-  (province) => ({
-    value: province.en,
-    label: province.fa,
-  }),
-);
+const provinceOptions: SelectOption[] = getProvincesList().map((province) => ({
+  value: province.en,
+  label: province.fa,
+}));
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
 
-const allowedTypes = [
-  "application/pdf",
-  "image/jpeg",
-  "image/png",
-];
+const allowedTypes = ["application/pdf", "image/jpeg", "image/png"];
 
 const schema: yup.ObjectSchema<CooperationForm> = yup.object({
   clinicName: yup
@@ -120,20 +116,29 @@ const schema: yup.ObjectSchema<CooperationForm> = yup.object({
     .string()
     .trim()
     .required("شماره تماس دامپزشک الزامی است.")
-    .matches(
-      /^(?:(?:\+|00)98|0)?9\d{9}$/,
-      "شماره موبایل معتبر وارد کنید.",
-    ),
+    .matches(/^(?:(?:\+|00)98|0)?9\d{9}$/, "شماره موبایل معتبر وارد کنید."),
 
   vetSpecialty: yup
     .string()
     .trim()
     .required("تخصص دامپزشک الزامی است.")
     .max(150, "تخصص نباید بیشتر از ۱۵۰ کاراکتر باشد."),
+  email: yup
+    .string()
+    .trim()
+    .email("ایمیل معتبر وارد کنید.")
+    .required("ایمیل الزامی است.")
+    .max(254, "ایمیل بیش از حد طولانی است."),
+
+  password: yup
+    .string()
+    .required("رمز عبور الزامی است.")
+    .min(8, "رمز عبور باید حداقل ۸ کاراکتر باشد.")
+    .max(72, "رمز عبور نباید بیشتر از ۷۲ کاراکتر باشد."),
 });
 
 const inputClass =
-  "w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-teal-600 focus:ring-4 focus:ring-teal-600/10";
+  "w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-blue-600 focus:ring-4 focus:ring-blue-600/10";
 
 const selectStyles = {
   control: (base: object) => ({
@@ -181,6 +186,8 @@ export default function ClinicCooperationPage() {
       licenseDocument: null,
       vetPhone: "",
       vetSpecialty: "",
+      email: "",
+      password: "",
     },
   });
 
@@ -203,14 +210,13 @@ export default function ClinicCooperationPage() {
 
     formData.append("clinicName", data.clinicName.trim());
     formData.append("managerName", data.managerName.trim());
-    formData.append(
-      "vetLicenseNumber",
-      data.vetLicenseNumber.trim(),
-    );
+    formData.append("vetFullName", data.managerName.trim());
+    formData.append("vetLicenseNumber", data.vetLicenseNumber.trim());
     formData.append("vetPhone", data.vetPhone.trim());
     formData.append("vetSpecialty", data.vetSpecialty.trim());
     formData.append("phone", data.phone.trim());
-
+    formData.append("email", data.email.trim().toLowerCase());
+    formData.append("password", data.password);
     // ارسال نام فارسی استان و شهر
     formData.append("province", data.province!.label);
     formData.append("city", data.city!.label);
@@ -258,7 +264,7 @@ export default function ClinicCooperationPage() {
     >
       <div className="mx-auto grid max-w-6xl items-start gap-8 lg:grid-cols-[0.85fr_1.15fr]">
         {/* معرفی */}
-        <section className="rounded-3xl bg-gradient-to-br from-teal-800 to-emerald-600 p-7 text-white shadow-lg sm:p-10">
+        <section className="rounded-3xl bg-gradient-to-br from-blue-900 to-emerald-600 p-7 text-white shadow-lg sm:p-10 h-full">
           <span className="inline-flex rounded-full bg-white/15 px-4 py-2 text-sm">
             همکاری با PetCard
           </span>
@@ -270,29 +276,65 @@ export default function ClinicCooperationPage() {
           </h1>
 
           <p className="mt-5 text-sm leading-8 text-white/85 sm:text-base">
-            اطلاعات کلینیک و دامپزشک مسئول را وارد کنید. درخواست
-            شما پس از ثبت، توسط ادمین بررسی خواهد شد.
+            اطلاعات کلینیک و دامپزشک مسئول را وارد کنید. درخواست شما پس از ثبت،
+            توسط ادمین بررسی خواهد شد.
           </p>
+          {/* اطلاعات حساب کاربری */}
+          <div>
+            <h3 className="mb-4 border-b border-slate-100 pb-3 font-bold text-blue-900">
+              اطلاعات حساب کاربری
+            </h3>
+
+            <p className="mb-4 text-sm leading-7 text-slate-500">
+              از این اطلاعات برای ورود دامپزشک به حساب PetCard استفاده خواهد شد.
+            </p>
+
+            <div className="grid gap-5 sm:grid-cols-2">
+              <div>
+                <label className="mb-2 block text-sm font-semibold">
+                  ایمیل دامپزشک *
+                </label>
+
+                <input
+                  {...register("email")}
+                  type="email"
+                  dir="ltr"
+                  autoComplete="email"
+                  className={inputClass}
+                  placeholder="doctor@example.com"
+                  maxLength={254}
+                />
+
+                <FieldError message={errors.email?.message} />
+              </div>
+
+              <div>
+                <label className="mb-2 block text-sm font-semibold">
+                  رمز عبور *
+                </label>
+
+                <input
+                  {...register("password")}
+                  type="password"
+                  dir="ltr"
+                  autoComplete="new-password"
+                  className={inputClass}
+                  placeholder="حداقل ۸ کاراکتر"
+                  maxLength={72}
+                />
+
+                <FieldError message={errors.password?.message} />
+              </div>
+            </div>
+          </div>
 
           <div className="mt-8 space-y-5">
             {[
-              [
-                "ثبت اطلاعات",
-                "مشخصات کلینیک و دامپزشک را وارد کنید.",
-              ],
-              [
-                "ارسال مدرک",
-                "پروانه فعالیت را برای بررسی بارگذاری کنید.",
-              ],
-              [
-                "بررسی ادمین",
-                "پس از تأیید، مراحل شروع همکاری انجام می‌شود.",
-              ],
+              ["ثبت اطلاعات", "مشخصات کلینیک و دامپزشک را وارد کنید."],
+              ["ارسال مدرک", "پروانه فعالیت را برای بررسی بارگذاری کنید."],
+              ["بررسی ادمین", "پس از تأیید، مراحل شروع همکاری انجام می‌شود."],
             ].map(([title, description]) => (
-              <div
-                key={title}
-                className="flex items-start gap-3"
-              >
+              <div key={title} className="flex items-start gap-3">
                 <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-white/15">
                   ✓
                 </span>
@@ -310,9 +352,7 @@ export default function ClinicCooperationPage() {
 
         {/* فرم */}
         <section className="rounded-3xl border border-slate-100 bg-white p-6 shadow-sm sm:p-9">
-          <h2 className="text-2xl font-extrabold">
-            درخواست همکاری کلینیک
-          </h2>
+          <h2 className="text-2xl font-extrabold">درخواست همکاری کلینیک</h2>
 
           <p className="mb-7 mt-2 text-sm leading-7 text-slate-500">
             تمام فیلدهای ستاره‌دار الزامی هستند.
@@ -500,9 +540,7 @@ export default function ClinicCooperationPage() {
                     maxLength={50}
                   />
 
-                  <FieldError
-                    message={errors.vetLicenseNumber?.message}
-                  />
+                  <FieldError message={errors.vetLicenseNumber?.message} />
                 </div>
 
                 <div>
@@ -554,7 +592,7 @@ export default function ClinicCooperationPage() {
                   id="licenseDocument"
                   type="file"
                   accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png"
-                  className="block w-full text-sm file:ml-3 file:rounded-lg file:border-0 file:bg-teal-700 file:px-4 file:py-2 file:font-semibold file:text-white"
+                  className="block w-full text-sm file:ml-3 file:rounded-lg file:border-0 file:bg-blue-700 file:px-4 file:py-2 file:font-semibold file:text-white"
                   onChange={(event) => {
                     const file = event.target.files?.[0] ?? null;
 
@@ -572,15 +610,13 @@ export default function ClinicCooperationPage() {
                 </p>
 
                 {selectedFile && (
-                  <p className="mt-2 break-all text-sm text-teal-800">
+                  <p className="mt-2 break-all text-sm text-blue-800">
                     فایل انتخاب‌شده: {selectedFile.name}
                   </p>
                 )}
               </div>
 
-              <FieldError
-                message={errors.licenseDocument?.message}
-              />
+              <FieldError message={errors.licenseDocument?.message} />
 
               <div className="mt-5">
                 <label className="mb-2 block text-sm font-semibold">
@@ -601,11 +637,9 @@ export default function ClinicCooperationPage() {
             <button
               type="submit"
               disabled={isSubmitting}
-              className="w-full rounded-xl bg-teal-700 px-5 py-3.5 font-bold text-white transition hover:bg-teal-800 focus:outline-none focus:ring-4 focus:ring-teal-700/20 disabled:cursor-not-allowed disabled:opacity-60"
+              className="w-full rounded-xl bg-blue-700 px-5 py-3.5 font-bold text-white transition hover:bg-blue-800 focus:outline-none focus:ring-4 focus:ring-blue-700/20 disabled:cursor-not-allowed disabled:opacity-60"
             >
-              {isSubmitting
-                ? "در حال ارسال درخواست..."
-                : "ثبت درخواست همکاری"}
+              {isSubmitting ? "در حال ارسال درخواست..." : "ثبت درخواست همکاری"}
             </button>
 
             <p className="text-center text-xs leading-6 text-slate-400">

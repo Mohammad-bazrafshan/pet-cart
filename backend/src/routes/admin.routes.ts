@@ -976,13 +976,17 @@ router.get(
 );
 
 /* تأیید یا رد درخواست همکاری */
+
+/* تأیید یا رد درخواست همکاری کلینیک */
+
+/* تأیید یا رد درخواست همکاری کلینیک */
 router.patch(
   "/cooperation-requests/:id",
   authenticateToken,
   requireRole("admin"),
   async (req: AuthRequest, res) => {
     const requestId = Number(req.params.id);
-    const { status } = req.body;
+    const status: unknown = req.body?.status;
 
     if (!Number.isInteger(requestId) || requestId <= 0) {
       return res.status(400).json({
@@ -990,30 +994,34 @@ router.patch(
       });
     }
 
-    if (!["approved", "rejected"].includes(status)) {
+    if (status !== "approved" && status !== "rejected") {
       return res.status(400).json({
         message: "وضعیت درخواست معتبر نیست.",
       });
     }
 
     let client: Awaited<ReturnType<typeof pool.connect>> | undefined;
+    let transactionStarted = false;
 
     try {
       client = await pool.connect();
+
       await client.query("BEGIN");
+      transactionStarted = true;
 
       const requestResult = await client.query(
         `
-        SELECT *
-        FROM clinic_cooperation_requests
-        WHERE id = $1
-        FOR UPDATE
+          SELECT *
+          FROM clinic_cooperation_requests
+          WHERE id = $1
+          FOR UPDATE
         `,
         [requestId],
       );
 
       if (requestResult.rows.length === 0) {
         await client.query("ROLLBACK");
+        transactionStarted = false;
 
         return res.status(404).json({
           message: "درخواست همکاری پیدا نشد.",
@@ -1024,6 +1032,7 @@ router.patch(
 
       if (request.status !== "pending") {
         await client.query("ROLLBACK");
+        transactionStarted = false;
 
         return res.status(409).json({
           message: "این درخواست قبلاً بررسی شده است.",
@@ -1031,23 +1040,102 @@ router.patch(
       }
 
       let clinic = null;
+      let createdUser = null;
+      let createdVeterinarian = null;
 
       if (status === "approved") {
-        // ۱. ساخت کلینیک با اطلاعات درخواست
+        const normalizedEmail =
+          typeof request.email === "string"
+            ? request.email.trim().toLowerCase()
+            : "";
+
+        const passwordHash =
+          typeof request.password_hash === "string"
+            ? request.password_hash
+            : "";
+
+        const veterinarianName =
+          typeof request.vet_full_name === "string" &&
+          request.vet_full_name.trim()
+            ? request.vet_full_name.trim()
+            : "";
+
+        const licenseNumber =
+          typeof request.vet_license_number === "string"
+            ? request.vet_license_number.trim()
+            : "";
+
+        if (!normalizedEmail || !passwordHash) {
+          await client.query("ROLLBACK");
+          transactionStarted = false;
+
+          return res.status(400).json({
+            message:
+              "ایمیل یا رمز عبور هش‌شده در درخواست ثبت نشده است. لطفاً درخواست جدید ثبت شود.",
+          });
+        }
+
+        if (!veterinarianName || !licenseNumber) {
+          await client.query("ROLLBACK");
+          transactionStarted = false;
+
+          return res.status(400).json({
+            message:
+              "نام دامپزشک یا شماره نظام دامپزشکی در درخواست موجود نیست.",
+          });
+        }
+
+        const existingUser = await client.query(
+          `
+            SELECT id
+            FROM users
+            WHERE LOWER(email) = $1
+          `,
+          [normalizedEmail],
+        );
+
+        if (existingUser.rows.length > 0) {
+          await client.query("ROLLBACK");
+          transactionStarted = false;
+
+          return res.status(409).json({
+            message: "این ایمیل قبلاً در سیستم ثبت شده است.",
+          });
+        }
+
+        const existingVeterinarian = await client.query(
+          `
+            SELECT id
+            FROM veterinarians
+            WHERE license_number = $1
+          `,
+          [licenseNumber],
+        );
+
+        if (existingVeterinarian.rows.length > 0) {
+          await client.query("ROLLBACK");
+          transactionStarted = false;
+
+          return res.status(409).json({
+            message: "این شماره نظام دامپزشکی قبلاً ثبت شده است.",
+          });
+        }
+
+        // ۱. ثبت کلینیک
         const clinicResult = await client.query(
           `
-          INSERT INTO clinics (
-            name,
-            phone,
-            address,
-            description,
-            manager_name,
-            province,
-            city,
-            vet_license_number
-          )
-          VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-          RETURNING *
+            INSERT INTO clinics (
+              name,
+              phone,
+              address,
+              description,
+              manager_name,
+              province,
+              city,
+              vet_license_number
+            )
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+            RETURNING *
           `,
           [
             request.clinic_name,
@@ -1057,62 +1145,118 @@ router.patch(
             request.manager_name,
             request.province,
             request.city,
-            request.vet_license_number,
+            licenseNumber,
           ],
         );
 
         clinic = clinicResult.rows[0];
 
-        // ۲. ثبت دامپزشک مسئول بدون نیاز به حساب کاربری
-        await client.query(
+        // ۲. ساخت حساب کاربری دامپزشک
+        // رمز قبلاً هنگام ثبت درخواست هش شده است.
+        const userResult = await client.query(
           `
-          INSERT INTO veterinarians (
-            user_id,
-            clinic_id,
-            specialty,
-            full_name,
-            phone,
-            license_number
-          )
-          VALUES (NULL, $1, $2, $3, $4, $5)
+            INSERT INTO users (
+              name,
+              email,
+              password,
+              role
+            )
+            VALUES ($1, $2, $3, 'veterinarian')
+            RETURNING id, name, email, role, created_at
+          `,
+          [veterinarianName, normalizedEmail, passwordHash],
+        );
+
+        createdUser = userResult.rows[0];
+
+        // ۳. ثبت دامپزشک و اتصال به کلینیک
+        const veterinarianResult = await client.query(
+          `
+            INSERT INTO veterinarians (
+              user_id,
+              clinic_id,
+              specialty,
+              full_name,
+              phone,
+              license_number
+            )
+            VALUES ($1, $2, $3, $4, $5, $6)
+            RETURNING
+              id,
+              user_id,
+              clinic_id,
+              specialty,
+              full_name,
+              phone,
+              license_number
           `,
           [
+            createdUser.id,
             clinic.id,
             request.vet_specialty,
-            request.vet_full_name || request.manager_name,
+            veterinarianName,
             request.vet_phone,
-            request.vet_license_number,
+            licenseNumber,
           ],
         );
+
+        createdVeterinarian = veterinarianResult.rows[0];
       }
 
-      // ۳. به‌روزرسانی وضعیت درخواست
+      // ۴. ثبت نتیجه بررسی درخواست
       const updateResult = await client.query(
         `
-        UPDATE clinic_cooperation_requests
-        SET status = $1
-        WHERE id = $2
-        RETURNING *
+          UPDATE clinic_cooperation_requests
+          SET status = $1
+          WHERE id = $2
+          RETURNING
+            id,
+            clinic_name,
+            manager_name,
+            vet_full_name,
+            vet_phone,
+            vet_specialty,
+            phone,
+            province,
+            city,
+            address,
+            description,
+            status,
+            created_at
         `,
         [status, requestId],
       );
 
       await client.query("COMMIT");
+      transactionStarted = false;
 
-      return res.json({
+      return res.status(200).json({
         message:
           status === "approved"
-            ? "درخواست تأیید شد و کلینیک و دامپزشک مسئول ثبت شدند."
+            ? "درخواست تأیید شد و اطلاعات کلینیک و حساب دامپزشک ثبت شدند."
             : "درخواست همکاری رد شد.",
         request: updateResult.rows[0],
         clinic,
+        user: createdUser,
+        veterinarian: createdVeterinarian,
       });
     } catch (error) {
-      if (client) {
+      if (transactionStarted && client) {
         await client.query("ROLLBACK").catch(() => {});
       }
 
       console.error("Review cooperation request error:", error);
+
+      if (
+        typeof error === "object" &&
+        error !== null &&
+        "code" in error &&
+        error.code === "23505"
+      ) {
+        return res.status(409).json({
+          message: "ایمیل یا یکی از اطلاعات یکتا قبلاً ثبت شده است.",
+        });
+      }
 
       return res.status(500).json({
         message: "بررسی درخواست همکاری با خطا مواجه شد.",
