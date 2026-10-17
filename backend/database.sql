@@ -687,3 +687,115 @@ ORDER BY v.id DESC;
     created_at
 FROM clinics
 ORDER BY id DESC;
+
+
+SELECT * FROM clinics LIMIT 5;
+
+SELECT
+    column_name,
+    data_type,
+    is_nullable
+FROM information_schema.columns
+WHERE table_schema = 'public'
+  AND table_name = 'clinics'
+ORDER BY ordinal_position;
+
+
+
+CREATE TABLE IF NOT EXISTS veterinarian_cooperation_requests (
+    id SERIAL PRIMARY KEY,
+
+    veterinarian_user_id INTEGER NOT NULL
+        REFERENCES users(id) ON DELETE CASCADE,
+
+    clinic_id INTEGER NOT NULL
+        REFERENCES clinics(id) ON DELETE CASCADE,
+
+    status VARCHAR(20) NOT NULL DEFAULT 'pending'
+        CHECK (status IN ('pending', 'approved', 'rejected')),
+
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    UNIQUE (veterinarian_user_id, clinic_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_vet_cooperation_clinic_status
+ON veterinarian_cooperation_requests (clinic_id, status);
+
+CREATE INDEX IF NOT EXISTS idx_vet_cooperation_user
+ON veterinarian_cooperation_requests (veterinarian_user_id);
+
+
+
+
+SELECT
+    column_name,
+    data_type,
+    is_nullable
+FROM information_schema.columns
+WHERE table_name = 'veterinarians'
+ORDER BY ordinal_position;
+
+
+-- اضافه کردن استان و شهر به کلینیک‌ها
+ALTER TABLE clinics
+ADD COLUMN IF NOT EXISTS province VARCHAR(100),
+ADD COLUMN IF NOT EXISTS city VARCHAR(100);
+
+-- ثبت درخواست‌های عمومی همکاری دامپزشکان
+CREATE TABLE IF NOT EXISTS veterinarian_applications (
+    id SERIAL PRIMARY KEY,
+    full_name VARCHAR(150) NOT NULL,
+    phone VARCHAR(30) NOT NULL,
+    license_number VARCHAR(50) NOT NULL,
+    specialty VARCHAR(150) NOT NULL,
+    province VARCHAR(100) NOT NULL,
+    city VARCHAR(100) NOT NULL,
+    work_type VARCHAR(50),
+    description TEXT,
+    status VARCHAR(20) NOT NULL DEFAULT 'pending',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT chk_veterinarian_application_status
+        CHECK (status IN ('pending', 'approved', 'rejected'))
+);
+
+CREATE INDEX IF NOT EXISTS idx_clinics_city_province
+ON clinics (province, city);
+
+CREATE INDEX IF NOT EXISTS idx_veterinarian_applications_status
+ON veterinarian_applications (status);
+
+SELECT
+    table_name,
+    column_name,
+    data_type,
+    is_nullable
+FROM information_schema.columns
+WHERE table_schema = 'public'
+  AND table_name IN (
+      'veterinarian_applications',
+      'veterinarians',
+      'clinics'
+  )
+ORDER BY table_name, ordinal_position;
+
+
+ALTER TABLE veterinarian_applications
+ADD COLUMN IF NOT EXISTS clinic_id INTEGER
+REFERENCES clinics(id) ON DELETE CASCADE;
+
+CREATE INDEX IF NOT EXISTS idx_veterinarian_applications_clinic_status
+ON veterinarian_applications (clinic_id, status);
+
+
+-- PetCard: add email and hashed password to veterinarian applications.
+-- Run this once against the PetCard PostgreSQL database.
+
+ALTER TABLE veterinarian_applications
+  ADD COLUMN IF NOT EXISTS email VARCHAR(254),
+  ADD COLUMN IF NOT EXISTS password_hash TEXT;
+
+CREATE INDEX IF NOT EXISTS idx_veterinarian_applications_email_status
+  ON veterinarian_applications (LOWER(email), status);

@@ -1,6 +1,5 @@
 import { Link } from "react-router-dom";
 import { useNavigate } from "react-router-dom";
-import VeterinarianCooperationSection from "../components/common/VeterinarianCooperationSection";
 const features = [
   {
     icon: "📋",
@@ -343,6 +342,8 @@ export default function Landing() {
       </section>
 
       {/* Clinics CTA */}
+
+      {/* Clinics CTA */}
       <section id="clinics" className="px-5 pb-20 sm:pb-24 lg:px-8">
         <div className="mx-auto max-w-7xl overflow-hidden rounded-[2rem] bg-gradient-to-l from-blue-700 via-blue-600 to-sky-500 px-6 py-12 text-white sm:px-12 sm:py-16">
           <div className="flex flex-col items-start justify-between gap-8 md:flex-row md:items-center">
@@ -350,27 +351,33 @@ export default function Landing() {
               <span className="inline-flex rounded-full bg-white/15 px-4 py-2 text-sm font-semibold">
                 همراهی با متخصصان
               </span>
+
               <h2 className="mt-5 text-2xl font-black leading-relaxed sm:text-3xl">
-                شما یک کلینیک دامپزشکی دارید؟
+                به خانواده پت‌کارت بپیوندید
               </h2>
+
               <p className="mt-4 max-w-xl leading-8 text-blue-50">
-                به پت‌کارت بپیوندید تا مدیریت نوبت‌ها و ارتباط با صاحبان حیوانات
-                خانگی را ساده‌تر کنید.
+                چه صاحب کلینیک باشید و چه دامپزشک، با پت‌کارت می‌توانید همکاری
+                حرفه‌ای خود را آغاز کنید.
               </p>
             </div>
 
-            <button
-              onClick={() => navigate("/clinic-cooperation")}
-              className="font-bold shrink-0 rounded-2xl bg-white px-7 py-4 font-bold text-blue-700 shadow-lg transition hover:-translate-y-0.5 hover:bg-blue-50"
-            >
-              درخواست همکاری کلینیک
-            </button>
-            <Link
-              to="/veterinarian-cooperation"
-              className="inline-flex items-center justify-center rounded-xl bg-white px-6 py-3 font-bold text-blue-700 transition hover:bg-blue-100"
-            >
-              <span className="text-blue-700"> درخواست همکاری با کلینیک‌ها</span>
-            </Link>
+            <div className="flex w-full shrink-0 flex-col gap-3 sm:w-auto sm:flex-row">
+              <button
+                type="button"
+                onClick={() => navigate("/clinic-cooperation")}
+                className="rounded-2xl bg-white px-7 py-4 font-bold text-blue-700 shadow-lg transition hover:-translate-y-0.5 hover:bg-blue-50"
+              >
+                درخواست همکاری کلینیک
+              </button>
+
+              <Link
+                to="/veterinarian-cooperation"
+                className="inline-flex items-center justify-center rounded-2xl border border-white/40 bg-white/10 px-7 py-4 font-bold text-white transition hover:-translate-y-0.5 hover:bg-white/20"
+              >
+                درخواست همکاری دامپزشک
+              </Link>
+            </div>
           </div>
         </div>
       </section>
