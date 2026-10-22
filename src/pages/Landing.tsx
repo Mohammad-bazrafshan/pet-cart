@@ -344,6 +344,8 @@ export default function Landing() {
       {/* Clinics CTA */}
 
       {/* Clinics CTA */}
+
+      {/* Cooperation CTA */}
       <section id="clinics" className="px-5 pb-20 sm:pb-24 lg:px-8">
         <div className="mx-auto max-w-7xl overflow-hidden rounded-[2rem] bg-gradient-to-l from-blue-700 via-blue-600 to-sky-500 px-6 py-12 text-white sm:px-12 sm:py-16">
           <div className="flex flex-col items-start justify-between gap-8 md:flex-row md:items-center">
@@ -357,25 +359,40 @@ export default function Landing() {
               </h2>
 
               <p className="mt-4 max-w-xl leading-8 text-blue-50">
-                چه صاحب کلینیک باشید و چه دامپزشک، با پت‌کارت می‌توانید همکاری
-                حرفه‌ای خود را آغاز کنید.
+                کلینیک، دامپزشک، ترینر یا واکر حیوانات هستید؟ درخواست همکاری خود
+                را ثبت کنید تا پس از بررسی و تأیید ادمین، بتوانید فعالیت خود را
+                در پت‌کارت آغاز کنید.
               </p>
             </div>
 
-            <div className="flex w-full shrink-0 flex-col gap-3 sm:w-auto sm:flex-row">
+            <div className="grid w-full shrink-0 gap-3 sm:w-auto sm:grid-cols-2">
               <button
                 type="button"
                 onClick={() => navigate("/clinic-cooperation")}
-                className="rounded-2xl bg-white px-7 py-4 font-bold text-blue-700 shadow-lg transition hover:-translate-y-0.5 hover:bg-blue-50"
+                className="rounded-2xl bg-white px-5 py-4 font-bold text-blue-700 shadow-lg transition hover:-translate-y-0.5 hover:bg-blue-50"
               >
                 درخواست همکاری کلینیک
               </button>
 
               <Link
                 to="/veterinarian-cooperation"
-                className="inline-flex items-center justify-center rounded-2xl border border-white/40 bg-white/10 px-7 py-4 font-bold text-white transition hover:-translate-y-0.5 hover:bg-white/20"
+                className="inline-flex items-center justify-center rounded-2xl border border-white/40 bg-white/10 px-5 py-4 text-center font-bold text-white transition hover:-translate-y-0.5 hover:bg-white/20"
               >
                 درخواست همکاری دامپزشک
+              </Link>
+
+              <Link
+                to="/provider-cooperation?type=trainer"
+                className="inline-flex items-center justify-center rounded-2xl border border-white/40 bg-white/10 px-5 py-4 text-center font-bold text-white transition hover:-translate-y-0.5 hover:bg-white/20"
+              >
+                درخواست همکاری ترینر
+              </Link>
+
+              <Link
+                to="/provider-cooperation?type=walker"
+                className="inline-flex items-center justify-center rounded-2xl border border-white/40 bg-white/10 px-5 py-4 text-center font-bold text-white transition hover:-translate-y-0.5 hover:bg-white/20"
+              >
+                درخواست همکاری واکر
               </Link>
             </div>
           </div>

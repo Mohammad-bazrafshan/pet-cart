@@ -799,3 +799,165 @@ ALTER TABLE veterinarian_applications
 
 CREATE INDEX IF NOT EXISTS idx_veterinarian_applications_email_status
   ON veterinarian_applications (LOWER(email), status);
+
+
+
+ALTER TABLE clinic_cooperation_requests
+ADD COLUMN IF NOT EXISTS email VARCHAR(254),
+ADD COLUMN IF NOT EXISTS password_hash VARCHAR(255);
+
+ALTER TABLE clinic_cooperation_requests
+ADD COLUMN IF NOT EXISTS vet_license_number VARCHAR(50),
+ADD COLUMN IF NOT EXISTS province VARCHAR(100),
+ADD COLUMN IF NOT EXISTS address TEXT,
+ADD COLUMN IF NOT EXISTS license_document_path TEXT,
+ADD COLUMN IF NOT EXISTS vet_full_name VARCHAR(150),
+ADD COLUMN IF NOT EXISTS vet_phone VARCHAR(30),
+ADD COLUMN IF NOT EXISTS vet_specialty VARCHAR(150),
+ADD COLUMN IF NOT EXISTS email VARCHAR(150),
+ADD COLUMN IF NOT EXISTS password_hash TEXT;
+
+
+SELECT
+    column_name,
+    data_type
+FROM information_schema.columns
+WHERE table_schema = 'public'
+  AND table_name = 'clinic_cooperation_requests'
+ORDER BY ordinal_position;
+
+
+
+BEGIN;
+
+-- اضافه کردن نقش‌های جدید
+ALTER TABLE users
+DROP CONSTRAINT IF EXISTS chk_users_role;
+
+ALTER TABLE users
+ADD CONSTRAINT chk_users_role
+CHECK (
+  role IN (
+    'owner',
+    'veterinarian',
+    'admin',
+    'trainer',
+    'walker'
+  )
+);
+
+-- وضعیت تأیید حساب
+ALTER TABLE users
+ADD COLUMN IF NOT EXISTS approval_status
+VARCHAR(20) NOT NULL DEFAULT 'approved';
+
+ALTER TABLE users
+ADD CONSTRAINT chk_users_approval_status
+CHECK (
+  approval_status IN (
+    'pending',
+    'approved',
+    'rejected'
+  )
+);
+
+COMMIT;
+
+
+
+CREATE TABLE IF NOT EXISTS service_providers (
+  id SERIAL PRIMARY KEY,
+
+  user_id INTEGER NOT NULL UNIQUE
+    REFERENCES users(id) ON DELETE CASCADE,
+
+  provider_type VARCHAR(20) NOT NULL
+    CHECK (provider_type IN ('trainer', 'walker')),
+
+  phone VARCHAR(20),
+  province VARCHAR(100),
+  city VARCHAR(100),
+  address TEXT,
+
+  bio TEXT,
+  experience_years INTEGER NOT NULL DEFAULT 0
+    CHECK (experience_years >= 0),
+
+  specialties TEXT[] NOT NULL DEFAULT '{}',
+
+  price NUMERIC(12, 2)
+    CHECK (price IS NULL OR price >= 0),
+
+  price_unit VARCHAR(30),
+
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_service_providers_type
+ON service_providers(provider_type);
+
+CREATE INDEX IF NOT EXISTS idx_service_providers_city
+ON service_providers(city);
+
+
+
+CREATE TABLE IF NOT EXISTS provider_cooperation_requests (
+    id SERIAL PRIMARY KEY,
+
+    provider_type VARCHAR(20) NOT NULL
+        CHECK (provider_type IN ('trainer', 'walker')),
+
+    full_name VARCHAR(150) NOT NULL,
+    email VARCHAR(254) NOT NULL,
+    password_hash TEXT NOT NULL,
+
+    phone VARCHAR(30) NOT NULL,
+    province VARCHAR(100) NOT NULL,
+    city VARCHAR(100) NOT NULL,
+    address TEXT,
+
+    bio TEXT,
+    experience_years INTEGER NOT NULL DEFAULT 0
+        CHECK (experience_years >= 0),
+
+    specialties TEXT[] NOT NULL DEFAULT '{}',
+
+    price NUMERIC(12, 2)
+        CHECK (price IS NULL OR price >= 0),
+
+    price_unit VARCHAR(30),
+
+    status VARCHAR(20) NOT NULL DEFAULT 'pending'
+        CHECK (status IN ('pending', 'approved', 'rejected')),
+
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    reviewed_at TIMESTAMPTZ
+);
+
+CREATE INDEX IF NOT EXISTS
+    idx_provider_cooperation_requests_status
+ON provider_cooperation_requests(status);
+
+CREATE INDEX IF NOT EXISTS
+    idx_provider_cooperation_requests_type
+ON provider_cooperation_requests(provider_type);
+
+
+SELECT conname, pg_get_constraintdef(oid)
+FROM pg_constraint
+WHERE conrelid = 'users'::regclass
+  AND contype = 'c';
+
+
+
+  SELECT column_name, column_default, is_nullable
+FROM information_schema.columns
+WHERE table_name = 'users'
+  AND column_name = 'approval_status';
+
+
+  SELECT column_name, data_type
+FROM information_schema.columns
+WHERE table_name = 'service_providers'
+ORDER BY ordinal_position;

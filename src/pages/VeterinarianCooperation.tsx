@@ -1,10 +1,7 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { Link } from "react-router-dom";
 import Select, { type StylesConfig } from "react-select";
-import {
-  getProvincesList,
-  getCities,
-} from "@code-plate/iran-cities";
+import { getProvincesList, getCities } from "@code-plate/iran-cities";
 
 import { api, getApiErrorMessage } from "../api/client";
 
@@ -49,12 +46,10 @@ const initialForm: ApplicationForm = {
   description: "",
 };
 
-const provinceOptions: SelectOption[] = getProvincesList().map(
-  (province) => ({
-    value: province.fa,
-    label: province.fa,
-  }),
-);
+const provinceOptions: SelectOption[] = getProvincesList().map((province) => ({
+  value: province.fa,
+  label: province.fa,
+}));
 
 const selectStyles: StylesConfig<SelectOption, false> = {
   control: (base, state) => ({
@@ -63,9 +58,7 @@ const selectStyles: StylesConfig<SelectOption, false> = {
     borderRadius: "14px",
     borderColor: state.isFocused ? "#0d9488" : "#e2e8f0",
     backgroundColor: state.isDisabled ? "#f8fafc" : "#ffffff",
-    boxShadow: state.isFocused
-      ? "0 0 0 3px rgba(13,148,136,0.12)"
-      : "none",
+    boxShadow: state.isFocused ? "0 0 0 3px rgba(13,148,136,0.12)" : "none",
     transition: "all 180ms ease",
     "&:hover": {
       borderColor: "#0d9488",
@@ -160,14 +153,10 @@ export default function VeterinarianCooperation() {
     : [];
 
   const selectedProvince =
-    provinceOptions.find(
-      (option) => option.value === form.province,
-    ) ?? null;
+    provinceOptions.find((option) => option.value === form.province) ?? null;
 
   const selectedCity =
-    cityOptions.find(
-      (option) => option.value === form.city,
-    ) ?? null;
+    cityOptions.find((option) => option.value === form.city) ?? null;
 
   const filteredClinics = clinics.filter(
     (clinic) =>
@@ -175,10 +164,7 @@ export default function VeterinarianCooperation() {
       clinic.city?.trim() === form.city,
   );
 
-  function updateField(
-    field: keyof ApplicationForm,
-    value: string,
-  ) {
+  function updateField(field: keyof ApplicationForm, value: string) {
     setForm((current) => ({
       ...current,
       [field]: value,
@@ -193,9 +179,7 @@ export default function VeterinarianCooperation() {
     setSuccess("");
   }
 
-  async function handleSubmit(
-    event: FormEvent<HTMLFormElement>,
-  ) {
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError("");
     setSuccess("");
@@ -230,10 +214,7 @@ export default function VeterinarianCooperation() {
     try {
       setSubmitting(true);
 
-      const {
-        confirmPassword: _confirmPassword,
-        ...applicationData
-      } = form;
+      const { confirmPassword: _confirmPassword, ...applicationData } = form;
 
       const response = await api.post(
         "/veterinarian-cooperation/applications",
@@ -262,12 +243,17 @@ export default function VeterinarianCooperation() {
   const inputClass =
     "w-full min-w-0 rounded-xl border border-slate-200 bg-white px-4 py-3.5 text-sm text-slate-800 outline-none transition duration-200 placeholder:text-slate-400 hover:border-teal-300 focus:border-teal-600 focus:ring-4 focus:ring-teal-600/10";
 
-  const labelClass =
-    "mb-2.5 block text-sm font-semibold text-slate-700";
+  const labelClass = "mb-2.5 block text-sm font-semibold text-slate-700";
 
   const sectionClass =
     "rounded-2xl border border-slate-100 bg-white p-5 sm:p-7";
-
+  useEffect(() => {
+    window.scrollTo({
+      top: 0,
+      left: 0,
+      behavior: "instant",
+    });
+  }, []);
   return (
     <div
       dir="rtl"
@@ -307,8 +293,8 @@ export default function VeterinarianCooperation() {
           </h1>
 
           <p className="mt-4 max-w-2xl text-sm leading-8 text-slate-500 sm:text-base">
-            کلینیک موردنظرت را پیدا کن، اطلاعات حرفه‌ای خودت را
-            ثبت کن و برای شروع همکاری درخواست بفرست.
+            کلینیک موردنظرت را پیدا کن، اطلاعات حرفه‌ای خودت را ثبت کن و برای
+            شروع همکاری درخواست بفرست.
           </p>
 
           <div className="mt-6 flex flex-wrap justify-center gap-3 text-xs font-medium text-slate-500 sm:text-sm">
@@ -523,9 +509,7 @@ export default function VeterinarianCooperation() {
 
             <div className="grid gap-5 sm:grid-cols-2">
               <div>
-                <label className={labelClass}>
-                  نام و نام خانوادگی
-                </label>
+                <label className={labelClass}>نام و نام خانوادگی</label>
                 <input
                   required
                   minLength={3}
@@ -549,17 +533,13 @@ export default function VeterinarianCooperation() {
                   autoComplete="tel"
                   className={inputClass}
                   value={form.phone}
-                  onChange={(event) =>
-                    updateField("phone", event.target.value)
-                  }
+                  onChange={(event) => updateField("phone", event.target.value)}
                   placeholder="09xxxxxxxxx"
                 />
               </div>
 
               <div>
-                <label className={labelClass}>
-                  شماره نظام دامپزشکی
-                </label>
+                <label className={labelClass}>شماره نظام دامپزشکی</label>
                 <input
                   required
                   maxLength={50}
@@ -637,8 +617,8 @@ export default function VeterinarianCooperation() {
                   ساخت حساب کاربری
                 </h2>
                 <p className="mt-1 text-sm leading-7 text-slate-500">
-                  پس از تأیید درخواست توسط کلینیک، حساب دامپزشکی‌ات
-                  بر اساس فرایند ثبت‌نام سامانه ایجاد خواهد شد.
+                  پس از تأیید درخواست توسط کلینیک، حساب دامپزشکی‌ات بر اساس
+                  فرایند ثبت‌نام سامانه ایجاد خواهد شد.
                 </p>
               </div>
             </div>
@@ -654,9 +634,7 @@ export default function VeterinarianCooperation() {
                   dir="ltr"
                   className={inputClass}
                   value={form.email}
-                  onChange={(event) =>
-                    updateField("email", event.target.value)
-                  }
+                  onChange={(event) => updateField("email", event.target.value)}
                   placeholder="example@email.com"
                 />
               </div>
@@ -680,9 +658,7 @@ export default function VeterinarianCooperation() {
               </div>
 
               <div>
-                <label className={labelClass}>
-                  تکرار رمز عبور
-                </label>
+                <label className={labelClass}>تکرار رمز عبور</label>
                 <input
                   required
                   type={showPassword ? "text" : "password"}
@@ -704,9 +680,7 @@ export default function VeterinarianCooperation() {
                   <input
                     type="checkbox"
                     checked={showPassword}
-                    onChange={(event) =>
-                      setShowPassword(event.target.checked)
-                    }
+                    onChange={(event) => setShowPassword(event.target.checked)}
                     className="h-4 w-4 rounded accent-teal-600"
                   />
                   نمایش رمزهای عبور
@@ -717,9 +691,8 @@ export default function VeterinarianCooperation() {
             <div className="mt-6 flex items-start gap-3 rounded-xl border border-teal-100 bg-teal-50/70 p-4">
               <span className="mt-0.5 text-lg">🔒</span>
               <p className="text-xs leading-7 text-teal-900">
-                رمز عبور برای ساخت حساب استفاده می‌شود. آن را با
-                دیگران به اشتراک نگذار و مطمئن شو بک‌اند رمز را
-                به‌صورت امن هش می‌کند.
+                رمز عبور برای ساخت حساب استفاده می‌شود. آن را با دیگران به
+                اشتراک نگذار و مطمئن شو بک‌اند رمز را به‌صورت امن هش می‌کند.
               </p>
             </div>
           </section>
@@ -766,8 +739,8 @@ export default function VeterinarianCooperation() {
             </button>
 
             <p className="mt-4 text-center text-xs leading-7 text-slate-400">
-              ثبت درخواست به‌معنای تأیید استخدام نیست؛ نتیجه پس از
-              بررسی کلینیک مشخص می‌شود.
+              ثبت درخواست به‌معنای تأیید استخدام نیست؛ نتیجه پس از بررسی کلینیک
+              مشخص می‌شود.
             </p>
           </div>
         </form>

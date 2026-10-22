@@ -12,6 +12,8 @@ import appointmentsRouter from "./routes/appointments.routes";
 import remindersRouter from "./routes/reminders.routes";
 import adminRouter from "./routes/admin.routes";
 import veterinarianCooperationRoutes from "./routes/veterinarianCooperation.routes";
+import providerRoutes from "./routes/provider.routes";
+import providerCooperationRoutes from "./routes/provider-cooperation.routes";
 dotenv.config();
 const app = express();
 
@@ -31,17 +33,19 @@ app.use("/api", vaccinationsRouter);
 app.use("/api/clinics", clinicsRouter);
 app.use("/api/veterinarians", veterinariansRouter);
 app.use("/api/appointments", appointmentsRouter);
-app.use(
-  "/api/veterinarian-cooperation",
-  veterinarianCooperationRoutes,
-);
-app.use("/api/reminders", remindersRouter);app.get("/", (req, res) => {
+app.use("/api/veterinarian-cooperation", veterinarianCooperationRoutes);
+app.use("/api/reminders", remindersRouter);
+app.get("/", (req, res) => {
   res.json({
     message: "PetCard Backend is running!",
   });
 });
 app.use("/api/admin", adminRouter);
-
+app.use("/api/providers", providerRoutes);
+app.use(
+  "/api/provider-cooperation-requests",
+  providerCooperationRoutes,
+);
 app.get("/api/test-db", async (req, res) => {
   try {
     const result = await pool.query("SELECT NOW()");

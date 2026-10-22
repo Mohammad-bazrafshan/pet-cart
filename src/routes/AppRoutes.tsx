@@ -30,6 +30,18 @@ import CooperationRequests from "../pages/admin/CooperationRequests";
 import CreateVeterinarian from "../pages/admin/CreateVeterinarian";
 import VeterinarianCooperation from "../pages/VeterinarianCooperation";
 import VeterinarianApplications from "../pages/clinic/VeterinarianApplications";
+import Providers from "../pages/admin/ProviderCooperationRequests";
+import ProviderCooperationPage from "../pages/ProviderCooperationPage";
+import ServiceProviderLayout from "../layouts/ServiceProviderLayout";
+import ServiceProviderDashboard from "../pages/provider/ServiceProviderDashboard";
+import ServiceProviderProfile from "../pages/provider/ServiceProviderProfile";
+import ServiceProviderSchedule from "../pages/provider/ServiceProviderSchedule";
+import ServiceProviderBookings from "../pages/provider/ServiceProviderBookings";
+import ServiceBookings from "../pages/owner/ServiceBookings";
+import ServiceProviders from "../pages/owner/ServiceProviders";
+import ServiceProviderDetails from "../pages/owner/ServiceProviderDetails";
+import OwnerProfile from "../pages/owner/OwnerProfile";
+
 const router = createBrowserRouter([
   {
     element: <RoleProtectedRoute allowedRoles={["veterinarian"]} />,
@@ -90,6 +102,10 @@ const router = createBrowserRouter([
             path: "veterinarians/new",
             element: <CreateVeterinarian />,
           },
+          {
+            path: "providers",
+            element: <Providers />,
+          },
         ],
       },
     ],
@@ -118,6 +134,66 @@ const router = createBrowserRouter([
     path: "/veterinarian-cooperation",
     element: <VeterinarianCooperation />,
   },
+  {
+    path: "/provider-cooperation",
+    element: <ProviderCooperationPage />,
+  },
+
+  {
+    element: <RoleProtectedRoute allowedRoles={["trainer"]} />,
+    children: [
+      {
+        path: "/trainer",
+        element: <ServiceProviderLayout providerType="trainer" />,
+        children: [
+          {
+            index: true,
+            element: <ServiceProviderDashboard providerType="trainer" />,
+          },
+          {
+            path: "profile",
+            element: <ServiceProviderProfile />,
+          },
+          {
+            path: "schedule",
+            element: <ServiceProviderSchedule />,
+          },
+          {
+            path: "bookings",
+            element: <ServiceProviderBookings />,
+          },
+        ],
+      },
+    ],
+  },
+
+  {
+    element: <RoleProtectedRoute allowedRoles={["walker"]} />,
+    children: [
+      {
+        path: "/walker",
+        element: <ServiceProviderLayout providerType="walker" />,
+        children: [
+          {
+            index: true,
+            element: <ServiceProviderDashboard providerType="walker" />,
+          },
+          {
+            path: "profile",
+            element: <ServiceProviderProfile />,
+          },
+          {
+            path: "schedule",
+            element: <ServiceProviderSchedule />,
+          },
+          {
+            path: "bookings",
+            element: <ServiceProviderBookings />,
+          },
+        ],
+      },
+    ],
+  },
 
   {
     element: <ProtectedRoute />,
@@ -136,6 +212,20 @@ const router = createBrowserRouter([
             path: "pets/:id/edit",
             element: <EditPet />,
           },
+          {
+            path: "service-bookings",
+            element: <ServiceBookings />,
+          },
+          {
+            path: "service-providers",
+            element: <ServiceProviders />,
+          },
+          { path: "service-providers", element: <ServiceProviders /> },
+          {
+            path: "service-providers/:id",
+            element: <ServiceProviderDetails />,
+          },
+          { path: "profile", element: <OwnerProfile /> },
         ],
       },
     ],

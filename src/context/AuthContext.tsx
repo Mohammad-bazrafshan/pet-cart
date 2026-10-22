@@ -14,6 +14,11 @@ export interface AuthUser {
   name: string;
   email: string;
   role?: string;
+  approval_status?: string | null;
+  phone?: string | null;
+  province?: string | null;
+  city?: string | null;
+  address?: string | null;
   demo?: boolean;
 }
 
@@ -139,8 +144,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
     sessionStorage.removeItem("petcart.demoSession");
 
     setUser(null);
+    setLoading(false);
   }, []);
-
   const enterDemo = useCallback(() => {
     if (!demoAllowed) return;
     sessionStorage.setItem("petcart.demoSession", "true");

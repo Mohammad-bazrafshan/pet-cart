@@ -7,13 +7,18 @@ const navItems = [
   { label: "مدیریت کاربران", to: "/admin/users", end: false, icon: "♙" },
   { label: "مدیریت کلینیک‌ها", to: "/admin/clinics", end: false, icon: "✚" },
   {
-    label: "درخواست‌های همکاری",
+    label: "درخواست‌های همکاری کلینیک و دامپزشک",
     to: "/admin/cooperation-requests",
     end: false,
     icon: "✉",
   },
+  {
+    label: "درخواست‌های ترینر و واکر",
+    to: "/admin/providers",
+    end: false,
+    icon: "🐾",
+  },
 ];
-
 function AdminLayout() {
   const { user, logout } = useAuth();
 
@@ -23,7 +28,7 @@ function AdminLayout() {
         <aside className="w-full border-b border-slate-200 bg-white md:min-h-screen md:w-72 md:border-b-0 md:border-l">
           <div className="border-b border-slate-100 p-6">
             <div className="flex items-center gap-3">
-              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 text-xl font-bold text-white shadow-lg shadow-emerald-100">
+              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-500 to-blue-600 text-xl font-bold text-white shadow-lg shadow-blue-100">
                 P
               </div>
 
@@ -51,7 +56,7 @@ function AdminLayout() {
                 className={({ isActive }) =>
                   `flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium transition ${
                     isActive
-                      ? "bg-emerald-50 text-emerald-700"
+                      ? "bg-blue-50 text-blue-700"
                       : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
                   }`
                 }
@@ -61,7 +66,7 @@ function AdminLayout() {
                     <span
                       className={`flex h-9 w-9 items-center justify-center rounded-lg text-lg ${
                         isActive
-                          ? "bg-emerald-100 text-emerald-700"
+                          ? "bg-blue-100 text-blue-700"
                           : "bg-slate-100 text-slate-500"
                       }`}
                     >
@@ -71,7 +76,7 @@ function AdminLayout() {
                     <span>{item.label}</span>
 
                     {isActive && (
-                      <span className="mr-auto h-2 w-2 rounded-full bg-emerald-500" />
+                      <span className="mr-auto h-2 w-2 rounded-full bg-blue-500" />
                     )}
                   </>
                 )}
@@ -80,7 +85,7 @@ function AdminLayout() {
           </nav>
 
           <div className="p-4 md:mt-4">
-            <div className="rounded-2xl bg-gradient-to-br from-emerald-50 to-teal-50 p-4">
+            <div className="rounded-2xl bg-gradient-to-br from-blue-50 to-teal-50 p-4">
               <div className="mb-2 flex h-10 w-10 items-center justify-center rounded-xl bg-white shadow-sm">
                 🐾
               </div>
@@ -110,7 +115,7 @@ function AdminLayout() {
               {/* اطلاعات ادمین و دکمه خروج */}
               <div className="flex items-center gap-3">
                 <div className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white px-3 py-2">
-                  <div className="flex h-9 w-9 items-center justify-center rounded-full bg-emerald-100 font-bold text-emerald-700">
+                  <div className="flex h-9 w-9 items-center justify-center rounded-full bg-blue-100 font-bold text-blue-700">
                     {user?.name?.trim()?.charAt(0) || "A"}
                   </div>
 

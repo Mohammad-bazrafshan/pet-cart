@@ -1,10 +1,26 @@
+
 import { NavLink } from "react-router-dom";
 
 const menuItems = [
-  { title: "خانه", path: "/dashboard", icon: "home" },
+  { title: "داشبورد", path: "/dashboard", icon: "home" },
+  { title: "پروفایل من", path: "/dashboard/profile", icon: "user" },
   { title: "حیوانات من", path: "/dashboard/pets", icon: "paw" },
-  { title: "نوبت‌ها", path: "/dashboard/appointments", icon: "calendar" },
+  {
+    title: "نوبت‌های دامپزشکی",
+    path: "/dashboard/appointments",
+    icon: "calendar",
+  },
   { title: "یادآوری‌ها", path: "/dashboard/reminders", icon: "bell" },
+  {
+    title: "مربی‌ها و پت‌واکرها",
+    path: "/dashboard/service-providers",
+    icon: "users",
+  },
+  {
+    title: "رزروهای خدمات",
+    path: "/dashboard/service-bookings",
+    icon: "clipboard",
+  },
 ];
 
 function NavIcon({ name }: { name: string }) {
@@ -15,6 +31,15 @@ function NavIcon({ name }: { name: string }) {
     strokeLinejoin: "round" as const,
     strokeWidth: 1.8,
   };
+
+  if (name === "user") {
+    return (
+      <svg viewBox="0 0 24 24" className="h-5 w-5" aria-hidden="true" {...common}>
+        <circle cx="12" cy="8" r="4" />
+        <path d="M5 21v-2a7 7 0 0 1 14 0v2" />
+      </svg>
+    );
+  }
 
   if (name === "paw") {
     return (
@@ -42,6 +67,25 @@ function NavIcon({ name }: { name: string }) {
     return (
       <svg viewBox="0 0 24 24" className="h-5 w-5" aria-hidden="true" {...common}>
         <path d="M18 9a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9ZM10 21h4" />
+      </svg>
+    );
+  }
+
+  if (name === "users") {
+    return (
+      <svg viewBox="0 0 24 24" className="h-5 w-5" aria-hidden="true" {...common}>
+        <path d="M16 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+        <circle cx="10" cy="7" r="4" />
+        <path d="M20 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" />
+      </svg>
+    );
+  }
+
+  if (name === "clipboard") {
+    return (
+      <svg viewBox="0 0 24 24" className="h-5 w-5" aria-hidden="true" {...common}>
+        <rect x="5" y="4" width="14" height="17" rx="2" />
+        <path d="M9 4.5h6a1.5 1.5 0 0 0-3-1.5h0a1.5 1.5 0 0 0-3 1.5ZM9 11h6M9 15h6" />
       </svg>
     );
   }
@@ -83,7 +127,10 @@ function Sidebar() {
           فضای شخصی
         </p>
 
-        <nav className="flex flex-wrap gap-2 lg:flex-col" aria-label="صفحات داشبورد">
+        <nav
+          className="flex flex-wrap gap-2 lg:flex-col"
+          aria-label="صفحات داشبورد"
+        >
           {menuItems.map((item, index) => (
             <NavLink
               key={item.path}

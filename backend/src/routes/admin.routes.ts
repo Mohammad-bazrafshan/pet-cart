@@ -81,8 +81,13 @@ router.patch(
       const userId = Number(req.params.id);
       const { role } = req.body;
 
-      const allowedRoles = ["owner", "veterinarian", "admin"];
-
+      const allowedRoles = [
+        "owner",
+        "veterinarian",
+        "trainer",
+        "walker",
+        "admin",
+      ];
       // بررسی id
       if (!Number.isInteger(userId)) {
         return res.status(400).json({
@@ -1266,4 +1271,112 @@ router.patch(
     }
   },
 );
+
+/* ================= TRAINER & WALKER REQUESTS ================= */
+
+// دریافت فهرست درخواست‌های ترینر و واکر
+router.get(
+  "/providers",
+  authenticateToken,
+  requireRole("admin"),
+  async (_req: AuthRequest, res) => {
+    try {
+      const result = await pool.query(`
+        SELECT
+          u.id,
+          u.name,
+          u.email,
+          u.role AS provider_type,
+          u.approval_status,
+          u.created_at,
+          sp.phone,
+          sp.province,
+          sp.city,
+          sp.address,
+          sp.bio,
+          sp.experience_years,
+          sp.specialties,
+          sp.price,
+          sp.price_unit
+        FROM users u
+        INNER JOIN service_providers sp
+          ON sp.user_id = u.id
+        WHERE u.role IN ('trainer', 'walker')
+        ORDER BY
+          CASE
+            WHEN u.approval_status = 'pending' THEN 0
+            ELSE 1
+          END,
+          u.created_at DESC
+      `);
+
+      return res.json(result.rows);
+    } catch (error) {
+      console.error("Admin providers error:", error);
+
+      return res.status(500).json({
+        message: "دریافت درخواست‌های ترینر و واکر با خطا مواجه شد.",
+      });
+    }
+  },
+);
+
+// تأیید یا رد درخواست ترینر و واکر
+router.patch(
+  "/providers/:id",
+  authenticateToken,
+  requireRole("admin"),
+  async (req: AuthRequest, res) => {
+    const userId = Number(req.params.id);
+    const { status } = req.body;
+
+    if (!Number.isInteger(userId) || userId <= 0) {
+      return res.status(400).json({
+        message: "شناسه کاربر معتبر نیست.",
+      });
+    }
+
+    if (!["approved", "rejected"].includes(status)) {
+      return res.status(400).json({
+        message: "وضعیت انتخاب‌شده معتبر نیست.",
+      });
+    }
+
+    try {
+      const result = await pool.query(
+        `
+        UPDATE users
+        SET approval_status = $1
+        WHERE id = $2
+          AND role IN ('trainer', 'walker')
+          AND approval_status = 'pending'
+        RETURNING id, name, email, role, approval_status
+        `,
+        [status, userId],
+      );
+
+      if (result.rows.length === 0) {
+        return res.status(404).json({
+          message:
+            "درخواست در انتظار بررسی پیدا نشد؛ ممکن است قبلاً بررسی شده باشد.",
+        });
+      }
+
+      return res.json({
+        message:
+          status === "approved"
+            ? "حساب ارائه‌دهنده با موفقیت تأیید شد."
+            : "درخواست همکاری رد شد.",
+        user: result.rows[0],
+      });
+    } catch (error) {
+      console.error("Review provider request error:", error);
+
+      return res.status(500).json({
+        message: "بررسی درخواست همکاری با خطا مواجه شد.",
+      });
+    }
+  },
+);
+
 export default router;

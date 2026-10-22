@@ -65,8 +65,7 @@ function AdminUsers() {
       user.name.toLowerCase().includes(searchValue) ||
       user.email.toLowerCase().includes(searchValue);
 
-    const matchesRole =
-      selectedRole === "all" || user.role === selectedRole;
+    const matchesRole = selectedRole === "all" || user.role === selectedRole;
 
     return matchesSearch && matchesRole;
   });
@@ -88,14 +87,22 @@ function AdminUsers() {
       </div>
     );
   }
+  function getRoleLabel(role: string) {
+    const roles: Record<string, string> = {
+      owner: "مالک حیوان",
+      veterinarian: "دامپزشک",
+      trainer: "ترینر",
+      walker: "واکر",
+      admin: "مدیر",
+    };
 
+    return roles[role] ?? role;
+  }
   return (
     <div>
       {/* عنوان صفحه */}
       <div className="mb-6">
-        <h2 className="text-2xl font-bold text-gray-800">
-          مدیریت کاربران
-        </h2>
+        <h2 className="text-2xl font-bold text-gray-800">مدیریت کاربران</h2>
 
         <p className="mt-1 text-sm text-gray-500">
           لیست کاربران ثبت‌نام‌شده در پت‌کارت
@@ -142,6 +149,8 @@ function AdminUsers() {
               <option value="all">همه کاربران</option>
               <option value="owner">مالک حیوان</option>
               <option value="veterinarian">دامپزشک</option>
+              <option value="trainer">ترینر</option>
+              <option value="walker">واکر</option>
               <option value="admin">مدیر</option>
             </select>
           </div>
@@ -154,10 +163,7 @@ function AdminUsers() {
             <span className="font-bold text-gray-800">
               {filteredUsers.length}
             </span>{" "}
-            از{" "}
-            <span className="font-bold text-gray-800">
-              {users.length}
-            </span>{" "}
+            از <span className="font-bold text-gray-800">{users.length}</span>{" "}
             کاربر
           </p>
 
@@ -224,11 +230,7 @@ function AdminUsers() {
                     <td className="px-6 py-4">
                       {currentUser?.id === user.id ? (
                         <span className="rounded-full bg-gray-100 px-3 py-1 text-xs font-medium text-gray-700">
-                          {user.role === "owner"
-                            ? "مالک حیوان"
-                            : user.role === "veterinarian"
-                              ? "دامپزشک"
-                              : "مدیر"}
+                          {getRoleLabel(user.role)}
                         </span>
                       ) : (
                         <select
@@ -241,6 +243,8 @@ function AdminUsers() {
                         >
                           <option value="owner">مالک حیوان</option>
                           <option value="veterinarian">دامپزشک</option>
+                          <option value="trainer">ترینر</option>
+                          <option value="walker">واکر</option>
                           <option value="admin">مدیر</option>
                         </select>
                       )}

@@ -6,6 +6,7 @@ import { Controller, useForm } from "react-hook-form";
 import type { SubmitHandler } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import * as yup from "yup";
+import { useEffect } from "react";
 
 type SelectOption = {
   value: string;
@@ -257,6 +258,13 @@ export default function ClinicCooperationPage() {
     }
   };
 
+  useEffect(() => {
+    window.scrollTo({
+      top: 0,
+      left: 0,
+      behavior: "instant",
+    });
+  }, []);
   return (
     <main
       dir="rtl"

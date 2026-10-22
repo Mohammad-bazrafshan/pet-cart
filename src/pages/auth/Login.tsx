@@ -1,4 +1,3 @@
-
 import { useState, type FormEvent } from "react";
 import { Link, Navigate, useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/useAuth";
@@ -29,10 +28,18 @@ function Login() {
 
   const getRolePath = (role?: string) => {
     switch (role?.toLowerCase()) {
-      case "veterinarian":
-        return "/clinic";
       case "admin":
         return "/admin";
+
+      case "veterinarian":
+        return "/clinic";
+
+      case "trainer":
+        return "/trainer";
+
+      case "walker":
+        return "/walker";
+
       case "owner":
       default:
         return "/dashboard";
@@ -69,8 +76,6 @@ function Login() {
     }
   };
 
-  
-
   return (
     <main
       dir="rtl"
@@ -82,7 +87,10 @@ function Login() {
       <div className="grid w-full max-w-6xl overflow-hidden rounded-[2rem] border border-slate-100 bg-white shadow-2xl shadow-blue-100/60 lg:min-h-[650px] lg:grid-cols-2">
         {/* فرم ورود */}
         <section className="flex flex-col justify-center px-6 py-10 sm:px-12 lg:px-14">
-          <Link to="/" className="mb-10 inline-flex items-center gap-3 self-start">
+          <Link
+            to="/"
+            className="mb-10 inline-flex items-center gap-3 self-start"
+          >
             <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-600 text-white shadow-lg shadow-blue-200">
               <PawIcon />
             </span>
@@ -118,7 +126,10 @@ function Login() {
           )}
 
           <form className="mt-7 grid gap-3" onSubmit={handleSubmit}>
-            <label htmlFor="login-email" className="text-sm font-bold text-slate-700">
+            <label
+              htmlFor="login-email"
+              className="text-sm font-bold text-slate-700"
+            >
               ایمیل
             </label>
             <input
@@ -131,7 +142,10 @@ function Login() {
               className="min-h-12 rounded-xl border border-slate-200 bg-white px-4 text-sm outline-none transition placeholder:text-slate-400 focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
             />
 
-            <label htmlFor="login-password" className="mt-2 text-sm font-bold text-slate-700">
+            <label
+              htmlFor="login-password"
+              className="mt-2 text-sm font-bold text-slate-700"
+            >
               گذرواژه
             </label>
             <input
@@ -155,11 +169,12 @@ function Login() {
             </button>
           </form>
 
-          
-
           <p className="mt-7 text-center text-sm text-slate-500">
             هنوز حساب نداری؟{" "}
-            <Link to="/register" className="font-extrabold text-blue-600 hover:text-blue-700">
+            <Link
+              to="/register"
+              className="font-extrabold text-blue-600 hover:text-blue-700"
+            >
               ثبت‌نام کن
             </Link>
           </p>
