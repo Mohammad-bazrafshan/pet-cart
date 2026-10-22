@@ -961,3 +961,129 @@ WHERE table_name = 'users'
 FROM information_schema.columns
 WHERE table_name = 'service_providers'
 ORDER BY ordinal_position;
+
+
+SELECT column_name, data_type, is_nullable
+FROM information_schema.columns
+WHERE table_name = 'service_providers'
+ORDER BY ordinal_position;
+
+SELECT
+    table_name,
+    column_name,
+    data_type
+FROM information_schema.columns
+WHERE table_schema = 'public'
+ORDER BY table_name, ordinal_position;
+
+CREATE TABLE IF NOT EXISTS service_provider_schedules (
+    id SERIAL PRIMARY KEY,
+
+    service_provider_id INTEGER NOT NULL
+        REFERENCES service_providers(id)
+        ON DELETE CASCADE,
+
+    day_of_week SMALLINT NOT NULL
+        CHECK (day_of_week BETWEEN 0 AND 6),
+
+    start_time TIME,
+    end_time TIME,
+
+    is_available BOOLEAN NOT NULL DEFAULT TRUE,
+
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+
+    CONSTRAINT unique_provider_schedule_day
+        UNIQUE (service_provider_id, day_of_week),
+
+    CONSTRAINT valid_schedule_times
+        CHECK (
+            (is_available = FALSE)
+            OR (
+                start_time IS NOT NULL
+                AND end_time IS NOT NULL
+                AND start_time < end_time
+            )
+        )
+);
+
+CREATE TABLE IF NOT EXISTS service_provider_bookings (
+    id BIGSERIAL PRIMARY KEY,
+
+    service_provider_id INTEGER NOT NULL
+        REFERENCES service_providers(id)
+        ON DELETE RESTRICT,
+
+    customer_id INTEGER NOT NULL
+        REFERENCES users(id)
+        ON DELETE RESTRICT,
+
+    booking_date DATE NOT NULL,
+    start_time TIME NOT NULL,
+    end_time TIME NOT NULL,
+
+    status VARCHAR(20) NOT NULL DEFAULT 'pending'
+        CHECK (
+            status IN (
+                'pending',
+                'confirmed',
+                'cancelled',
+                'completed'
+            )
+        ),
+
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+
+    CONSTRAINT valid_booking_time
+        CHECK (start_time < end_time)
+);
+
+CREATE INDEX IF NOT EXISTS
+    idx_provider_bookings_date
+ON service_provider_bookings (
+    service_provider_id,
+    booking_date
+);
+
+
+CREATE EXTENSION IF NOT EXISTS btree_gist;
+
+ALTER TABLE service_provider_bookings
+ADD CONSTRAINT no_overlapping_provider_bookings
+EXCLUDE USING gist (
+    service_provider_id WITH =,
+    tsrange(
+        booking_date + start_time,
+        booking_date + end_time,
+        '[)'
+    ) WITH &&
+)
+WHERE (status IN ('pending', 'confirmed'));
+
+
+
+SELECT column_name, data_type
+FROM information_schema.columns
+WHERE table_name = 'users'
+ORDER BY ordinal_position;
+
+
+SELECT
+    table_name,
+    column_name,
+    data_type
+FROM information_schema.columns
+WHERE table_schema = 'public'
+ORDER BY table_name, ordinal_position;
+
+
+
+
+
+ALTER TABLE users
+ADD COLUMN IF NOT EXISTS phone VARCHAR(20),
+ADD COLUMN IF NOT EXISTS province VARCHAR(100),
+ADD COLUMN IF NOT EXISTS city VARCHAR(100),
+ADD COLUMN IF NOT EXISTS address TEXT;
