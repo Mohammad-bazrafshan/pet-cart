@@ -45,9 +45,7 @@ function CreateVeterinarian() {
     loadClinics();
   }, []);
 
-  async function handleSubmit(
-    event: React.FormEvent<HTMLFormElement>,
-  ) {
+  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError("");
     setSuccess("");
@@ -83,9 +81,7 @@ function CreateVeterinarian() {
         clinicId: Number(clinicId),
       });
 
-      setSuccess(
-        "حساب کاربری و اطلاعات دامپزشک با موفقیت ثبت شدند.",
-      );
+      setSuccess("حساب کاربری و اطلاعات دامپزشک با موفقیت ثبت شدند.");
 
       setTimeout(() => {
         navigate(`/admin/clinics/${clinicId}`);
@@ -94,9 +90,7 @@ function CreateVeterinarian() {
       console.error(err);
 
       const message =
-        typeof err === "object" &&
-        err !== null &&
-        "response" in err
+        typeof err === "object" && err !== null && "response" in err
           ? (
               err as {
                 response?: {
@@ -126,13 +120,11 @@ function CreateVeterinarian() {
           ← بازگشت
         </button>
 
-        <h2 className="text-2xl font-bold text-gray-800">
-          ثبت دامپزشک جدید
-        </h2>
+        <h2 className="text-2xl font-bold text-gray-800">ثبت دامپزشک جدید</h2>
 
         <p className="mt-2 text-sm text-gray-500">
-          اطلاعات حرفه‌ای و مشخصات ورود دامپزشک را وارد کنید.
-          با ثبت این فرم، حساب کاربری دامپزشک نیز ساخته می‌شود.
+          اطلاعات حرفه‌ای و مشخصات ورود دامپزشک را وارد کنید. با ثبت این فرم،
+          حساب کاربری دامپزشک نیز ساخته می‌شود.
         </p>
       </div>
 
@@ -164,9 +156,7 @@ function CreateVeterinarian() {
         {/* اطلاعات حساب کاربری */}
 
         <div className="rounded-xl border border-blue-100 bg-blue-50/50 p-4 space-y-4">
-          <h3 className="font-semibold text-gray-800">
-            اطلاعات حساب کاربری
-          </h3>
+          <h3 className="font-semibold text-gray-800">اطلاعات حساب کاربری</h3>
 
           <div>
             <label
@@ -212,16 +202,14 @@ function CreateVeterinarian() {
               <input
                 type="checkbox"
                 checked={showPassword}
-                onChange={(event) =>
-                  setShowPassword(event.target.checked)
-                }
+                onChange={(event) => setShowPassword(event.target.checked)}
               />
               نمایش رمز عبور
             </label>
 
             <p className="mt-2 text-xs text-gray-500">
-              این مشخصات را به‌صورت امن در اختیار دامپزشک قرار بده.
-              رمز عبور در دیتابیس به‌صورت هش‌شده ذخیره می‌شود.
+              این مشخصات را به‌صورت امن در اختیار دامپزشک قرار بده. رمز عبور در
+              دیتابیس به‌صورت هش‌شده ذخیره می‌شود.
             </p>
           </div>
         </div>
@@ -260,9 +248,7 @@ function CreateVeterinarian() {
             <input
               id="licenseNumber"
               value={licenseNumber}
-              onChange={(event) =>
-                setLicenseNumber(event.target.value)
-              }
+              onChange={(event) => setLicenseNumber(event.target.value)}
               className={inputClass}
               placeholder="شماره نظام"
               required
@@ -287,8 +273,39 @@ function CreateVeterinarian() {
             required
           />
         </div>
+        <div>
+          <label
+            htmlFor="clinicId"
+            className="mb-2 block text-sm font-medium text-gray-700"
+          >
+            کلینیک محل فعالیت *
+          </label>
 
-       
+          <select
+            id="clinicId"
+            value={clinicId}
+            onChange={(event) => setClinicId(event.target.value)}
+            className={inputClass}
+            required
+            disabled={loadingClinics || clinics.length === 0}
+          >
+            <option value="">
+              {loadingClinics ? "در حال دریافت کلینیک‌ها..." : "انتخاب کلینیک"}
+            </option>
+
+            {clinics.map((clinic) => (
+              <option key={clinic.id} value={String(clinic.id)}>
+                {clinic.name}
+              </option>
+            ))}
+          </select>
+
+          {!loadingClinics && clinics.length === 0 && (
+            <p className="mt-2 text-sm text-red-600">
+              کلینیکی برای انتخاب وجود ندارد.
+            </p>
+          )}
+        </div>
 
         {error && (
           <p
@@ -314,9 +331,7 @@ function CreateVeterinarian() {
             disabled={submitting || loadingClinics}
             className="rounded-lg bg-blue-600 px-5 py-2.5 text-sm font-medium text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
           >
-            {submitting
-              ? "در حال ثبت..."
-              : "ثبت دامپزشک و ایجاد حساب"}
+            {submitting ? "در حال ثبت..." : "ثبت دامپزشک و ایجاد حساب"}
           </button>
 
           <button

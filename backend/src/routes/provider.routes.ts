@@ -854,7 +854,10 @@ router.get("/bookings", authenticateToken, async (req: AuthRequest, res) => {
     });
   }
 
-  if (!["owner", "trainer", "walker"].includes(role)) {
+  if (
+    typeof role !== "string" ||
+    !["owner", "trainer", "walker"].includes(role)
+  ) {
     return res.status(403).json({
       message: "شما به این بخش دسترسی ندارید.",
     });
@@ -965,7 +968,10 @@ router.patch(
       });
     }
 
-    if (!["owner", "trainer", "walker"].includes(role)) {
+    if (
+      typeof role !== "string" ||
+      !["owner", "trainer", "walker"].includes(role)
+    ) {
       return res.status(403).json({
         message: "شما به این بخش دسترسی ندارید.",
       });

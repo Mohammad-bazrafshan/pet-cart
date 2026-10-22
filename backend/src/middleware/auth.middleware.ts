@@ -1,9 +1,9 @@
-
-import { Request, Response, NextFunction } from "express";
+import type { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
 import pool from "../db";
 
-const JWT_SECRET = process.env.JWT_SECRET;
+// بررسی تنظیم بودن کلید JWT
+const JWT_SECRET: string = process.env.JWT_SECRET ?? "";
 
 if (!JWT_SECRET) {
   throw new Error("JWT_SECRET is not defined");
@@ -17,11 +17,11 @@ export interface AuthRequest extends Request {
   };
 }
 
-// بررسی توکن
+// بررسی و اعتبارسنجی توکن
 export function authenticateToken(
   req: AuthRequest,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) {
   const authHeader = req.headers.authorization;
   const token = authHeader?.split(" ")[1];
@@ -35,13 +35,21 @@ export function authenticateToken(
   try {
     const decoded = jwt.verify(token, JWT_SECRET);
 
+    if (typeof decoded !== "object" || decoded === null) {
+      return res.status(401).json({
+        message: "ساختار توکن معتبر نیست.",
+      });
+    }
+
+    const id: unknown = decoded["id"];
+    const email: unknown = decoded["email"];
+    const role: unknown = decoded["role"];
+
     if (
-      typeof decoded === "string" ||
-      !decoded ||
-      typeof decoded !== "object" ||
-      typeof decoded.id !== "number" ||
-      typeof decoded.email !== "string" ||
-      typeof decoded.role !== "string"
+      typeof id !== "number" ||
+      !Number.isInteger(id) ||
+      typeof email !== "string" ||
+      typeof role !== "string"
     ) {
       return res.status(401).json({
         message: "ساختار توکن معتبر نیست.",
@@ -49,12 +57,12 @@ export function authenticateToken(
     }
 
     req.user = {
-      id: decoded.id,
-      email: decoded.email,
-      role: decoded.role,
+      id,
+      email,
+      role,
     };
 
-    next();
+    return next();
   } catch {
     return res.status(401).json({
       message: "توکن نامعتبر یا منقضی شده است.",
@@ -62,12 +70,12 @@ export function authenticateToken(
   }
 }
 
-// محدودکردن دسترسی بر اساس نقش
+// محدود کردن دسترسی بر اساس نقش
 export function requireRole(...allowedRoles: string[]) {
   return (
     req: AuthRequest,
     res: Response,
-    next: NextFunction
+    next: NextFunction,
   ) => {
     const user = req.user;
 
@@ -83,24 +91,26 @@ export function requireRole(...allowedRoles: string[]) {
       });
     }
 
-    next();
+    return next();
   };
 }
 
-// بررسی نقش و وضعیت فعلی حساب از دیتابیس
+// بررسی نقش و وضعیت تأیید حساب از دیتابیس
 export async function requireApprovedProvider(
   req: AuthRequest,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) {
   try {
-    const userId = req.user?.id;
+    const currentUser = req.user;
 
-    if (!userId) {
+    if (!currentUser) {
       return res.status(401).json({
         message: "کاربر احراز هویت نشده است.",
       });
     }
+
+    const userId = currentUser.id;
 
     const result = await pool.query(
       `
@@ -108,7 +118,7 @@ export async function requireApprovedProvider(
       FROM users
       WHERE id = $1
       `,
-      [userId]
+      [userId],
     );
 
     if (result.rows.length === 0) {
@@ -135,10 +145,10 @@ export async function requireApprovedProvider(
       });
     }
 
-    // نقش جاری دیتابیس جایگزین نقش داخل توکن می‌شود
-    req.user.role = user.role;
+    // نقش فعلی دیتابیس جایگزین نقش داخل توکن می‌شود
+    currentUser.role = user.role;
 
-    next();
+    return next();
   } catch (error) {
     console.error("Provider approval check error:", error);
 

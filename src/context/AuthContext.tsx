@@ -5,7 +5,6 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import type { AxiosResponse } from "axios";
 import axios from "axios";
 import { api, getApiErrorMessage } from "../api/client";
 import { AuthContext } from "./AuthContextValue";
@@ -48,9 +47,7 @@ interface AuthProviderProps {
   children: ReactNode;
 }
 
-function saveSession(response: AxiosResponse<AuthResponse>) {
-  return response.data.user;
-}
+
 
 export function AuthProvider({ children }: AuthProviderProps) {
   console.log("API URL:", import.meta.env.VITE_API_URL);

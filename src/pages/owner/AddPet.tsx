@@ -65,8 +65,7 @@ function AddPet() {
         : "border-slate-200 hover:border-slate-300 focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
     }`;
 
-  const labelClass =
-    "mb-2 block text-sm font-bold text-slate-700";
+  const labelClass = "mb-2 block text-sm font-bold text-slate-700";
 
   const errorClass = "mt-2 text-xs font-medium text-red-600";
 
@@ -82,7 +81,6 @@ function AddPet() {
       setLoading(true);
 
       await createPet({
-        owner_id: Number(user.id),
         name: data.name,
         type: data.type,
         breed: data.breed,
@@ -101,10 +99,7 @@ function AddPet() {
   };
 
   return (
-    <div
-      dir="rtl"
-      className="mx-auto max-w-3xl space-y-6 pb-8"
-    >
+    <div dir="rtl" className="mx-auto max-w-3xl space-y-6 pb-8">
       {/* Page heading */}
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
@@ -177,10 +172,34 @@ function AddPet() {
                 aria-hidden="true"
               >
                 <path d="M12 13.2c-2.4-2.5-6.8-.5-6.8 3.2 0 2.2 1.6 3.6 3.8 3.1 2-.5 4-.5 6 0 2.2.5 3.8-.9 3.8-3.1 0-3.7-4.4-5.7-6.8-3.2Z" />
-                <ellipse cx="5.1" cy="9.2" rx="1.8" ry="2.5" transform="rotate(-25 5.1 9.2)" />
-                <ellipse cx="9.5" cy="6.1" rx="1.8" ry="2.5" transform="rotate(-10 9.5 6.1)" />
-                <ellipse cx="14.5" cy="6.1" rx="1.8" ry="2.5" transform="rotate(10 14.5 6.1)" />
-                <ellipse cx="18.9" cy="9.2" rx="1.8" ry="2.5" transform="rotate(25 18.9 9.2)" />
+                <ellipse
+                  cx="5.1"
+                  cy="9.2"
+                  rx="1.8"
+                  ry="2.5"
+                  transform="rotate(-25 5.1 9.2)"
+                />
+                <ellipse
+                  cx="9.5"
+                  cy="6.1"
+                  rx="1.8"
+                  ry="2.5"
+                  transform="rotate(-10 9.5 6.1)"
+                />
+                <ellipse
+                  cx="14.5"
+                  cy="6.1"
+                  rx="1.8"
+                  ry="2.5"
+                  transform="rotate(10 14.5 6.1)"
+                />
+                <ellipse
+                  cx="18.9"
+                  cy="9.2"
+                  rx="1.8"
+                  ry="2.5"
+                  transform="rotate(25 18.9 9.2)"
+                />
               </svg>
             </div>
 
@@ -373,8 +392,8 @@ function AddPet() {
 
           {/* Required fields note */}
           <p className="text-xs leading-6 text-slate-400">
-            <span className="text-red-500">*</span>
-            {" "}تکمیل تمام فیلدهای بالا الزامی است.
+            <span className="text-red-500">*</span> تکمیل تمام فیلدهای بالا
+            الزامی است.
           </p>
         </div>
 

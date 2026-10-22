@@ -6,7 +6,7 @@ import {
   requireRole,
   type AuthRequest,
 } from "../middleware/auth.middleware";
-
+import type { PoolClient } from "pg";
 const router = Router();
 
 /* ثبت درخواست همکاری ترینر یا واکر */
@@ -34,19 +34,11 @@ router.post("/", async (req, res) => {
       });
     }
 
-    const requiredFields = [
-      fullName,
-      email,
-      password,
-      phone,
-      province,
-      city,
-    ];
+    const requiredFields = [fullName, email, password, phone, province, city];
 
     if (
       !requiredFields.every(
-        (value) =>
-          typeof value === "string" && value.trim().length > 0,
+        (value) => typeof value === "string" && value.trim().length > 0,
       )
     ) {
       return res.status(400).json({
@@ -119,8 +111,7 @@ router.post("/", async (req, res) => {
       });
     }
 
-    const normalizedSpecialties =
-      specialties === undefined ? [] : specialties;
+    const normalizedSpecialties = specialties === undefined ? [] : specialties;
 
     if (
       !Array.isArray(normalizedSpecialties) ||
@@ -206,8 +197,7 @@ router.post("/", async (req, res) => {
     );
 
     return res.status(201).json({
-      message:
-        "درخواست همکاری ثبت شد و پس از بررسی ادمین نتیجه مشخص می‌شود.",
+      message: "درخواست همکاری ثبت شد و پس از بررسی ادمین نتیجه مشخص می‌شود.",
       request: result.rows[0],
     });
   } catch (error) {
@@ -282,7 +272,7 @@ router.patch(
       });
     }
 
-    let client: Awaited<ReturnType<typeof pool.connect>> | undefined;
+    let client: PoolClient | undefined;
     let transactionStarted = false;
 
     try {

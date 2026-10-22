@@ -8,6 +8,7 @@ import {
 import path from "node:path";
 import { access } from "node:fs/promises";
 import bcrypt from "bcrypt";
+import type { PoolClient } from "pg";
 const router = Router();
 
 router.get(
@@ -726,7 +727,7 @@ router.delete(
   authenticateToken,
   requireRole("admin"),
   async (req: AuthRequest, res) => {
-    let client: Awaited<ReturnType<typeof pool.connect>> | undefined;
+    let client: PoolClient | undefined;
     let transactionStarted = false;
 
     try {
@@ -1005,7 +1006,7 @@ router.patch(
       });
     }
 
-    let client: Awaited<ReturnType<typeof pool.connect>> | undefined;
+    let client: PoolClient | undefined;
     let transactionStarted = false;
 
     try {

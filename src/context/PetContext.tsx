@@ -22,7 +22,7 @@ export interface PetContextType {
 }
 
 interface PetState {
-  ownerId: string | null;
+  ownerId: string | number | null;
   pets: Pet[];
   loading: boolean;
   error: string | null;
@@ -49,30 +49,52 @@ export function PetProvider({ children }: PetProviderProps) {
     const ownerId = user.id;
     if (user.demo) {
       const demoPets: Pet[] = [
-        { id: "demo-max", name: "مکس", type: "سگ", breed: "گلدن رتریور", age: 3, weight: 12, gender: "نر" },
-        { id: "demo-milo", name: "میلو", type: "گربه", breed: "پرشین", age: 2, weight: 4, gender: "نر" },
+        {
+          id: "demo-max",
+          name: "مکس",
+          type: "سگ",
+          breed: "گلدن رتریور",
+          age: 3,
+          weight: 12,
+          gender: "نر",
+        },
+        {
+          id: "demo-milo",
+          name: "میلو",
+          type: "گربه",
+          breed: "پرشین",
+          age: 2,
+          weight: 4,
+          gender: "نر",
+        },
       ];
       setState({ ownerId, pets: demoPets, loading: false, error: null });
       return;
     }
 
-    setState((current) => current.ownerId === ownerId
-      ? { ...current, loading: true, error: null }
-      : { ownerId, pets: [], loading: true, error: null });
+    setState((current) =>
+      current.ownerId === ownerId
+        ? { ...current, loading: true, error: null }
+        : { ownerId, pets: [], loading: true, error: null },
+    );
     try {
       const response = await api.get<Pet[]>("/pets");
-      setState((current) => current.ownerId === ownerId
-        ? { ...current, pets: response.data, error: null }
-        : current);
+      setState((current) =>
+        current.ownerId === ownerId
+          ? { ...current, pets: response.data, error: null }
+          : current,
+      );
     } catch (requestError) {
-      setState((current) => current.ownerId === ownerId
-        ? { ...current, error: getApiErrorMessage(requestError) }
-        : current);
+      setState((current) =>
+        current.ownerId === ownerId
+          ? { ...current, error: getApiErrorMessage(requestError) }
+          : current,
+      );
       throw requestError;
     } finally {
-      setState((current) => current.ownerId === ownerId
-        ? { ...current, loading: false }
-        : current);
+      setState((current) =>
+        current.ownerId === ownerId ? { ...current, loading: false } : current,
+      );
     }
   }, [user]);
 
@@ -90,31 +112,43 @@ export function PetProvider({ children }: PetProviderProps) {
     const ownerId = user.id;
     if (user.demo) {
       const newPet = { ...pet, id: `demo-${crypto.randomUUID()}` };
-      setState((current) => current.ownerId === ownerId
-        ? { ...current, pets: [...current.pets, newPet] }
-        : current);
+      setState((current) =>
+        current.ownerId === ownerId
+          ? { ...current, pets: [...current.pets, newPet] }
+          : current,
+      );
       return;
     }
 
-    setState((current) => current.ownerId === ownerId
-      ? { ...current, error: null }
-      : current);
+    setState((current) =>
+      current.ownerId === ownerId ? { ...current, error: null } : current,
+    );
     try {
       const response = await api.post<Pet>("/pets", pet);
-      setState((current) => current.ownerId === ownerId
-        ? { ...current, pets: [...current.pets, response.data] }
-        : current);
+      setState((current) =>
+        current.ownerId === ownerId
+          ? { ...current, pets: [...current.pets, response.data] }
+          : current,
+      );
     } catch (requestError) {
-      setState((current) => current.ownerId === ownerId
-        ? { ...current, error: getApiErrorMessage(requestError) }
-        : current);
+      setState((current) =>
+        current.ownerId === ownerId
+          ? { ...current, error: getApiErrorMessage(requestError) }
+          : current,
+      );
       throw requestError;
     }
   };
 
-  const currentState = user && state.ownerId === user.id
-    ? state
-    : { ownerId: user?.id ?? null, pets: [], loading: Boolean(user), error: null };
+  const currentState =
+    user && state.ownerId === user.id
+      ? state
+      : {
+          ownerId: user?.id ?? null,
+          pets: [],
+          loading: Boolean(user),
+          error: null,
+        };
 
   return (
     <PetContext.Provider value={{ ...currentState, addPet, refreshPets }}>

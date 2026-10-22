@@ -17,11 +17,16 @@ import providerCooperationRoutes from "./routes/provider-cooperation.routes";
 dotenv.config();
 const app = express();
 
-const PORT = 5000;
+const PORT = Number(process.env.PORT) || 5000;
+const allowedOrigins = (
+  process.env.FRONTEND_URL || "http://localhost:5174"
+)
+  .split(",")
+  .map((origin) => origin.trim());
 
 app.use(
   cors({
-    origin: "http://localhost:5173",
+    origin: allowedOrigins,
     credentials: true,
   }),
 );
@@ -42,10 +47,7 @@ app.get("/", (req, res) => {
 });
 app.use("/api/admin", adminRouter);
 app.use("/api/providers", providerRoutes);
-app.use(
-  "/api/provider-cooperation-requests",
-  providerCooperationRoutes,
-);
+app.use("/api/provider-cooperation-requests", providerCooperationRoutes);
 app.get("/api/test-db", async (req, res) => {
   try {
     const result = await pool.query("SELECT NOW()");
