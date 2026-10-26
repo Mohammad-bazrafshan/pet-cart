@@ -27,30 +27,3 @@ backend/.env.*
 *.njsproj
 *.sln
 *.sw?
-
-
-# Backend environment files
-/backend/.env
-/backend/.env.*
-!/backend/.env.example
-
-# Backend generated files and dependencies
-/backend/node_modules/
-/backend/dist/
-
-# Private clinic documents
-/backend/private-uploads/
-
-
-# Root environment files
-/.env
-/.env.*
-!/.env.example
-
-# Private clinic documents
-/backend/private-uploads/
-
-# Backend environment files
-/backend/.env
-/backend/.env.*
-!/backend/.env.example
