@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import type { ReactNode } from "react";
 import { getCities, getProvincesList } from "@code-plate/iran-cities";
 import axios from "axios";
 import Select from "react-select";
@@ -6,8 +7,24 @@ import { Controller, useForm } from "react-hook-form";
 import type { SubmitHandler } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import * as yup from "yup";
-import { useEffect } from "react";
-
+import {
+  ArrowLeft,
+  BadgeCheck,
+  Building2,
+  Check,
+  CheckCircle2,
+  ClipboardCheck,
+  FileCheck2,
+  HeartPulse,
+  LockKeyhole,
+  MapPin,
+  ShieldCheck,
+  Stethoscope,
+  UploadCloud,
+  UserRound,
+  LogOut,
+} from "lucide-react";
+import { Link } from "react-router-dom";
 type SelectOption = {
   value: string;
   label: string;
@@ -29,14 +46,12 @@ type CooperationForm = {
   password: string;
 };
 
-// دریافت فهرست استان‌های ایران از کتابخانه
 const provinceOptions: SelectOption[] = getProvincesList().map((province) => ({
   value: province.en,
   label: province.fa,
 }));
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
-
 const allowedTypes = ["application/pdf", "image/jpeg", "image/png"];
 
 const schema: yup.ObjectSchema<CooperationForm> = yup.object({
@@ -124,6 +139,7 @@ const schema: yup.ObjectSchema<CooperationForm> = yup.object({
     .trim()
     .required("تخصص دامپزشک الزامی است.")
     .max(150, "تخصص نباید بیشتر از ۱۵۰ کاراکتر باشد."),
+
   email: yup
     .string()
     .trim()
@@ -139,30 +155,65 @@ const schema: yup.ObjectSchema<CooperationForm> = yup.object({
 });
 
 const inputClass =
-  "w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-blue-600 focus:ring-4 focus:ring-blue-600/10";
+  "w-full rounded-xl border border-slate-200 bg-white px-4 py-3.5 text-sm text-slate-800 outline-none transition placeholder:text-slate-400 hover:border-blue-300 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10";
 
 const selectStyles = {
-  control: (base: object) => ({
+  control: (base: object, state: { isFocused: boolean }) => ({
     ...base,
-    minHeight: "48px",
+    minHeight: "49px",
     borderRadius: "12px",
-    borderColor: "#e2e8f0",
-    boxShadow: "none",
+    borderColor: state.isFocused ? "#3b82f6" : "#e2e8f0",
+    backgroundColor: "#ffffff",
+    boxShadow: state.isFocused ? "0 0 0 4px rgba(59,130,246,.10)" : "none",
     "&:hover": {
-      borderColor: "#0d9488",
+      borderColor: "#93c5fd",
     },
+  }),
+
+  valueContainer: (base: object) => ({
+    ...base,
+    padding: "4px 12px",
+  }),
+
+  placeholder: (base: object) => ({
+    ...base,
+    color: "#94a3b8",
+    fontSize: "13px",
+  }),
+
+  input: (base: object) => ({
+    ...base,
+    fontSize: "14px",
   }),
 
   menu: (base: object) => ({
     ...base,
-    zIndex: 20,
+    zIndex: 50,
+    borderRadius: "12px",
+    overflow: "hidden",
+    boxShadow: "0 16px 40px -12px rgba(15,23,42,.18)",
+  }),
+
+  option: (
+    base: object,
+    state: { isFocused: boolean; isSelected: boolean },
+  ) => ({
+    ...base,
+    fontSize: "14px",
+    padding: "12px 16px",
+    backgroundColor: state.isSelected
+      ? "#2563eb"
+      : state.isFocused
+        ? "#eff6ff"
+        : "#ffffff",
+    color: state.isSelected ? "#ffffff" : "#1e293b",
+    cursor: "pointer",
   }),
 };
 
 export default function ClinicCooperationPage() {
   const [success, setSuccess] = useState("");
   const [serverError, setServerError] = useState("");
-
   const {
     register,
     handleSubmit,
@@ -174,7 +225,6 @@ export default function ClinicCooperationPage() {
     formState: { errors, isSubmitting },
   } = useForm<CooperationForm>({
     resolver: yupResolver(schema),
-
     defaultValues: {
       clinicName: "",
       managerName: "",
@@ -193,9 +243,11 @@ export default function ClinicCooperationPage() {
   });
 
   const selectedProvince = watch("province");
+  const selectedCity = watch("city");
   const selectedFile = watch("licenseDocument");
+  const clinicName = watch("clinicName");
+  const managerName = watch("managerName");
 
-  // دریافت شهرهای استان انتخاب‌شده
   const cityOptions: SelectOption[] = selectedProvince
     ? getCities(selectedProvince.value).map((city) => ({
         value: city.en,
@@ -218,10 +270,8 @@ export default function ClinicCooperationPage() {
     formData.append("phone", data.phone.trim());
     formData.append("email", data.email.trim().toLowerCase());
     formData.append("password", data.password);
-    // ارسال نام فارسی استان و شهر
     formData.append("province", data.province!.label);
     formData.append("city", data.city!.label);
-
     formData.append("address", data.address.trim());
     formData.append("description", data.description.trim());
     formData.append("licenseDocument", data.licenseDocument!);
@@ -238,7 +288,6 @@ export default function ClinicCooperationPage() {
 
       reset();
 
-      // پاک کردن فایل انتخاب‌شده از ورودی فایل
       const fileInput = document.getElementById(
         "licenseDocument",
       ) as HTMLInputElement | null;
@@ -246,6 +295,8 @@ export default function ClinicCooperationPage() {
       if (fileInput) {
         fileInput.value = "";
       }
+
+      window.scrollTo({ top: 0, behavior: "smooth" });
     } catch (error) {
       if (axios.isAxiosError(error)) {
         setServerError(
@@ -259,180 +310,157 @@ export default function ClinicCooperationPage() {
   };
 
   useEffect(() => {
-    window.scrollTo({
-      top: 0,
-      left: 0,
-      behavior: "instant",
-    });
+    window.scrollTo({ top: 0, left: 0, behavior: "instant" });
   }, []);
+
   return (
-    <main
-      dir="rtl"
-      className="min-h-screen bg-slate-50 px-4 py-12 text-slate-800 sm:py-16"
-    >
-      <div className="mx-auto grid max-w-6xl items-start gap-8 lg:grid-cols-[0.85fr_1.15fr]">
-        {/* معرفی */}
-        <section className="rounded-3xl bg-gradient-to-br from-blue-900 to-emerald-600 p-7 text-white shadow-lg sm:p-10 h-full">
-          <span className="inline-flex rounded-full bg-white/15 px-4 py-2 text-sm">
-            همکاری با PetCard
-          </span>
+    <main dir="rtl" className="min-h-screen bg-[#f5f8ff] text-slate-800">
+      {/* Header */}
+      <header className="border-b border-slate-200 bg-white">
+        <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4 sm:px-6 lg:px-8">
+          <a href="/" className="flex items-center gap-3">
+            <Link
+              to="/"
+              className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700"
+            >
+              {" "}
+              <LogOut size={18} />
+              بازگشت به صفحه اصلی
+            </Link>
+            <span className="flex size-11 items-center justify-center rounded-2xl bg-blue-600 text-white shadow-lg shadow-blue-200">
+              <HeartPulse size={23} />
+            </span>
 
-          <h1 className="mt-6 text-3xl font-extrabold leading-relaxed sm:text-4xl">
-            کلینیک شما،
-            <br />
-            همراه سلامت حیوانات
-          </h1>
+            <span>
+              <span className="block text-lg font-black tracking-tight text-slate-900">
+                PetCard
+              </span>
 
-          <p className="mt-5 text-sm leading-8 text-white/85 sm:text-base">
-            اطلاعات کلینیک و دامپزشک مسئول را وارد کنید. درخواست شما پس از ثبت،
-            توسط ادمین بررسی خواهد شد.
-          </p>
-          {/* اطلاعات حساب کاربری */}
-          <div>
-            <h3 className="mb-4 border-b border-slate-100 pb-3 font-bold text-blue-900">
-              اطلاعات حساب کاربری
-            </h3>
+              <span className="block text-[11px] font-medium text-slate-400">
+                سلامت هوشمند حیوانات
+              </span>
+            </span>
+          </a>
 
-            <p className="mb-4 text-sm leading-7 text-slate-500">
-              از این اطلاعات برای ورود دامپزشک به حساب PetCard استفاده خواهد شد.
-            </p>
-
-            <div className="grid gap-5 sm:grid-cols-2">
-              <div>
-                <label className="mb-2 block text-sm font-semibold">
-                  ایمیل دامپزشک *
-                </label>
-
-                <input
-                  {...register("email")}
-                  type="email"
-                  dir="ltr"
-                  autoComplete="email"
-                  className={inputClass}
-                  placeholder="doctor@example.com"
-                  maxLength={254}
-                />
-
-                <FieldError message={errors.email?.message} />
-              </div>
-
-              <div>
-                <label className="mb-2 block text-sm font-semibold">
-                  رمز عبور *
-                </label>
-
-                <input
-                  {...register("password")}
-                  type="password"
-                  dir="ltr"
-                  autoComplete="new-password"
-                  className={inputClass}
-                  placeholder="حداقل ۸ کاراکتر"
-                  maxLength={72}
-                />
-
-                <FieldError message={errors.password?.message} />
-              </div>
-            </div>
+          <div className="hidden items-center gap-2 rounded-full border border-blue-100 bg-blue-50 px-4 py-2 text-xs font-bold text-blue-700 sm:flex">
+            <ShieldCheck size={16} />
+            درخواست همکاری کلینیک
           </div>
+        </div>
+      </header>
 
-          <div className="mt-8 space-y-5">
-            {[
-              ["ثبت اطلاعات", "مشخصات کلینیک و دامپزشک را وارد کنید."],
-              ["ارسال مدرک", "پروانه فعالیت را برای بررسی بارگذاری کنید."],
-              ["بررسی ادمین", "پس از تأیید، مراحل شروع همکاری انجام می‌شود."],
-            ].map(([title, description]) => (
-              <div key={title} className="flex items-start gap-3">
-                <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-white/15">
-                  ✓
+      <div className="mx-auto max-w-7xl px-4 pb-14 pt-8 sm:px-6 sm:pt-12 lg:px-8">
+        {/* Hero */}
+        <section className="relative mb-8 overflow-hidden rounded-[28px] bg-slate-950 px-6 py-8 text-white sm:px-10 sm:py-10 lg:px-12">
+          <div className="absolute inset-0 bg-gradient-to-l from-blue-700/80 via-blue-800/40 to-slate-950" />
+          <div className="absolute -left-16 -top-24 size-72 rounded-full border-[36px] border-white/5" />
+          <div className="absolute -left-2 top-8 size-40 rounded-full bg-blue-400/20 blur-3xl" />
+
+          <div className="relative grid items-center gap-8 lg:grid-cols-[1fr_auto]">
+            <div className="max-w-2xl">
+              <span className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3.5 py-2 text-xs font-bold text-blue-100">
+                <Building2 size={15} />
+                به شبکه درمان پت‌کارت بپیوندید
+              </span>
+
+              <h1 className="mt-5 text-3xl font-black leading-relaxed sm:text-4xl lg:text-[42px]">
+                تجربه‌ای بهتر برای
+                <span className="block text-blue-300">
+                  کلینیک شما و صاحبان حیوانات
                 </span>
+              </h1>
 
+              <p className="mt-4 max-w-xl text-sm leading-8 text-slate-300 sm:text-base">
+                اطلاعات کلینیک و دامپزشک مسئول را ثبت کنید. پس از بررسی مدارک
+                توسط تیم پت‌کارت، نتیجه درخواست به شما اعلام می‌شود.
+              </p>
+            </div>
+
+            <div className="hidden w-56 flex-col gap-3 rounded-2xl border border-white/10 bg-white/[0.07] p-5 backdrop-blur-sm lg:flex">
+              <div className="flex items-center gap-3">
+                <span className="flex size-10 items-center justify-center rounded-xl bg-blue-500/20 text-blue-200">
+                  <ClipboardCheck size={20} />
+                </span>
                 <div>
-                  <h2 className="font-bold">{title}</h2>
-                  <p className="mt-1 text-sm leading-6 text-white/75">
-                    {description}
-                  </p>
+                  <p className="text-sm font-bold">ثبت درخواست</p>
+                  <p className="mt-1 text-xs text-slate-400">اطلاعات و مدارک</p>
                 </div>
               </div>
-            ))}
+
+              <div className="mr-5 h-5 border-r border-dashed border-white/20" />
+
+              <div className="flex items-center gap-3">
+                <span className="flex size-10 items-center justify-center rounded-xl bg-white/10 text-slate-300">
+                  <BadgeCheck size={20} />
+                </span>
+                <div>
+                  <p className="text-sm font-bold">بررسی و تأیید</p>
+                  <p className="mt-1 text-xs text-slate-400">توسط تیم مدیریت</p>
+                </div>
+              </div>
+            </div>
           </div>
         </section>
 
-        {/* فرم */}
-        <section className="rounded-3xl border border-slate-100 bg-white p-6 shadow-sm sm:p-9">
-          <h2 className="text-2xl font-extrabold">درخواست همکاری کلینیک</h2>
+        {success && (
+          <div
+            role="status"
+            className="mb-6 flex items-start gap-3 rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-sm leading-7 text-emerald-800"
+          >
+            <CheckCircle2 size={21} className="mt-1 shrink-0" />
+            <p>{success}</p>
+          </div>
+        )}
 
-          <p className="mb-7 mt-2 text-sm leading-7 text-slate-500">
-            تمام فیلدهای ستاره‌دار الزامی هستند.
-          </p>
+        {serverError && (
+          <div
+            role="alert"
+            className="mb-6 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm leading-7 text-red-700"
+          >
+            {serverError}
+          </div>
+        )}
 
-          {success && (
-            <div
-              role="status"
-              className="mb-5 rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm leading-7 text-emerald-800"
-            >
-              {success}
-            </div>
-          )}
-
-          {serverError && (
-            <div
-              role="alert"
-              className="mb-5 rounded-xl border border-red-200 bg-red-50 p-4 text-sm leading-7 text-red-700"
-            >
-              {serverError}
-            </div>
-          )}
-
+        <div className="grid items-start gap-7 lg:grid-cols-[minmax(0,1fr)_300px]">
+          {/* Main form */}
           <form
             onSubmit={handleSubmit(onSubmit)}
-            className="space-y-6"
             noValidate
+            className="min-w-0 space-y-6"
           >
-            {/* اطلاعات کلینیک */}
-            <div>
-              <h3 className="mb-4 border-b border-slate-100 pb-3 font-bold">
-                اطلاعات کلینیک
-              </h3>
-
+            <FormSection
+              number="۰۱"
+              title="مشخصات کلینیک"
+              subtitle="اطلاعات تماس و نشانی محل فعالیت"
+              icon={<Building2 size={20} />}
+            >
               <div className="grid gap-5 sm:grid-cols-2">
-                <div>
-                  <label className="mb-2 block text-sm font-semibold">
-                    نام کلینیک *
-                  </label>
-
+                <FormField
+                  label="نام کلینیک *"
+                  error={errors.clinicName?.message}
+                >
                   <input
                     {...register("clinicName")}
                     className={inputClass}
                     placeholder="مثلاً کلینیک مهر"
                     maxLength={150}
                   />
+                </FormField>
 
-                  <FieldError message={errors.clinicName?.message} />
-                </div>
-
-                <div>
-                  <label className="mb-2 block text-sm font-semibold">
-                    شماره تماس کلینیک *
-                  </label>
-
+                <FormField
+                  label="شماره تماس کلینیک *"
+                  error={errors.phone?.message}
+                >
                   <input
                     {...register("phone")}
                     type="tel"
                     dir="ltr"
                     className={inputClass}
-                    placeholder="09123456789"
+                    placeholder="02112345678 یا 09123456789"
                   />
+                </FormField>
 
-                  <FieldError message={errors.phone?.message} />
-                </div>
-
-                {/* انتخاب استان */}
-                <div>
-                  <label className="mb-2 block text-sm font-semibold">
-                    استان *
-                  </label>
-
+                <FormField label="استان *" error={errors.province?.message}>
                   <Controller
                     name="province"
                     control={control}
@@ -445,30 +473,21 @@ export default function ClinicCooperationPage() {
                         onBlur={field.onBlur}
                         onChange={(option) => {
                           field.onChange(option);
-
-                          // پاک کردن شهر قبلی هنگام تغییر استان
                           setValue("city", null, {
                             shouldValidate: true,
                             shouldDirty: true,
                           });
                         }}
-                        placeholder="جست‌وجو و انتخاب استان"
+                        placeholder="انتخاب استان"
                         noOptionsMessage={() => "استانی یافت نشد"}
                         styles={selectStyles}
                         isClearable
                       />
                     )}
                   />
+                </FormField>
 
-                  <FieldError message={errors.province?.message} />
-                </div>
-
-                {/* انتخاب شهر */}
-                <div>
-                  <label className="mb-2 block text-sm font-semibold">
-                    شهر *
-                  </label>
-
+                <FormField label="شهر *" error={errors.city?.message}>
                   <Controller
                     name="city"
                     control={control}
@@ -483,7 +502,7 @@ export default function ClinicCooperationPage() {
                         isDisabled={!selectedProvince}
                         placeholder={
                           selectedProvince
-                            ? "جست‌وجو و انتخاب شهر"
+                            ? "انتخاب شهر"
                             : "ابتدا استان را انتخاب کنید"
                         }
                         noOptionsMessage={() => "شهری یافت نشد"}
@@ -492,54 +511,47 @@ export default function ClinicCooperationPage() {
                       />
                     )}
                   />
+                </FormField>
 
-                  <FieldError message={errors.city?.message} />
+                <div className="sm:col-span-2">
+                  <FormField
+                    label="آدرس دقیق کلینیک *"
+                    error={errors.address?.message}
+                  >
+                    <textarea
+                      {...register("address")}
+                      className={`${inputClass} min-h-24 resize-y`}
+                      placeholder="خیابان، کوچه، پلاک و جزئیات آدرس"
+                      maxLength={500}
+                    />
+                  </FormField>
                 </div>
               </div>
+            </FormSection>
 
-              <div className="mt-5">
-                <label className="mb-2 block text-sm font-semibold">
-                  آدرس دقیق کلینیک *
-                </label>
-
-                <textarea
-                  {...register("address")}
-                  className={`${inputClass} min-h-24 resize-y`}
-                  placeholder="خیابان، کوچه، پلاک و سایر جزئیات آدرس"
-                  maxLength={500}
-                />
-
-                <FieldError message={errors.address?.message} />
-              </div>
-            </div>
-
-            {/* اطلاعات دامپزشک */}
-            <div>
-              <h3 className="mb-4 border-b border-slate-100 pb-3 font-bold">
-                اطلاعات دامپزشک مسئول
-              </h3>
-
+            <FormSection
+              number="۰۲"
+              title="دامپزشک مسئول"
+              subtitle="اطلاعات هویتی و تخصصی مسئول کلینیک"
+              icon={<Stethoscope size={20} />}
+            >
               <div className="grid gap-5 sm:grid-cols-2">
-                <div>
-                  <label className="mb-2 block text-sm font-semibold">
-                    نام و نام خانوادگی دامپزشک *
-                  </label>
-
+                <FormField
+                  label="نام و نام خانوادگی *"
+                  error={errors.managerName?.message}
+                >
                   <input
                     {...register("managerName")}
                     className={inputClass}
                     placeholder="نام دامپزشک مسئول"
                     maxLength={150}
                   />
+                </FormField>
 
-                  <FieldError message={errors.managerName?.message} />
-                </div>
-
-                <div>
-                  <label className="mb-2 block text-sm font-semibold">
-                    کد نظام پزشکی *
-                  </label>
-
+                <FormField
+                  label="کد نظام پزشکی *"
+                  error={errors.vetLicenseNumber?.message}
+                >
                   <input
                     {...register("vetLicenseNumber")}
                     className={inputClass}
@@ -547,15 +559,12 @@ export default function ClinicCooperationPage() {
                     placeholder="کد نظام پزشکی"
                     maxLength={50}
                   />
+                </FormField>
 
-                  <FieldError message={errors.vetLicenseNumber?.message} />
-                </div>
-
-                <div>
-                  <label className="mb-2 block text-sm font-semibold">
-                    شماره موبایل دامپزشک *
-                  </label>
-
+                <FormField
+                  label="شماره موبایل دامپزشک *"
+                  error={errors.vetPhone?.message}
+                >
                   <input
                     {...register("vetPhone")}
                     type="tel"
@@ -564,99 +573,340 @@ export default function ClinicCooperationPage() {
                     placeholder="09123456789"
                     maxLength={15}
                   />
+                </FormField>
 
-                  <FieldError message={errors.vetPhone?.message} />
-                </div>
-
-                <div>
-                  <label className="mb-2 block text-sm font-semibold">
-                    تخصص دامپزشک *
-                  </label>
-
+                <FormField
+                  label="تخصص دامپزشک *"
+                  error={errors.vetSpecialty?.message}
+                >
                   <input
                     {...register("vetSpecialty")}
                     className={inputClass}
                     placeholder="مثلاً دامپزشکی عمومی"
                     maxLength={150}
                   />
-
-                  <FieldError message={errors.vetSpecialty?.message} />
-                </div>
+                </FormField>
               </div>
-            </div>
+            </FormSection>
 
-            {/* مدارک و توضیحات */}
-            <div>
-              <h3 className="mb-4 border-b border-slate-100 pb-3 font-bold">
-                مدارک و توضیحات
-              </h3>
+            <FormSection
+              number="۰۳"
+              title="حساب کاربری"
+              subtitle="اطلاعات ورود دامپزشک به پنل پت‌کارت"
+              icon={<UserRound size={20} />}
+            >
+              <div className="grid gap-5 sm:grid-cols-2">
+                <FormField
+                  label="ایمیل دامپزشک *"
+                  error={errors.email?.message}
+                >
+                  <input
+                    {...register("email")}
+                    type="email"
+                    dir="ltr"
+                    autoComplete="email"
+                    className={inputClass}
+                    placeholder="doctor@example.com"
+                    maxLength={254}
+                  />
+                </FormField>
 
-              <label className="mb-2 block text-sm font-semibold">
-                پروانه فعالیت کلینیک *
-              </label>
-
-              <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-5">
-                <input
-                  id="licenseDocument"
-                  type="file"
-                  accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png"
-                  className="block w-full text-sm file:ml-3 file:rounded-lg file:border-0 file:bg-blue-700 file:px-4 file:py-2 file:font-semibold file:text-white"
-                  onChange={(event) => {
-                    const file = event.target.files?.[0] ?? null;
-
-                    setValue("licenseDocument", file, {
-                      shouldValidate: true,
-                      shouldDirty: true,
-                    });
-
-                    clearErrors("licenseDocument");
-                  }}
-                />
-
-                <p className="mt-3 text-xs leading-6 text-slate-500">
-                  فرمت مجاز PDF، JPG و PNG؛ حداکثر حجم ۵ مگابایت.
-                </p>
-
-                {selectedFile && (
-                  <p className="mt-2 break-all text-sm text-blue-800">
-                    فایل انتخاب‌شده: {selectedFile.name}
-                  </p>
-                )}
+                <FormField label="رمز عبور *" error={errors.password?.message}>
+                  <input
+                    {...register("password")}
+                    type="password"
+                    dir="ltr"
+                    autoComplete="new-password"
+                    className={inputClass}
+                    placeholder="حداقل ۸ کاراکتر"
+                    maxLength={72}
+                  />
+                </FormField>
               </div>
 
-              <FieldError message={errors.licenseDocument?.message} />
+              <p className="mt-4 flex items-center gap-2 text-xs leading-6 text-slate-500">
+                <LockKeyhole size={15} className="shrink-0 text-blue-600" />
+                رمز عبور را در اختیار دیگران قرار ندهید.
+              </p>
+            </FormSection>
+
+            <FormSection
+              number="۰۴"
+              title="مدارک و توضیحات"
+              subtitle="مدرک لازم برای بررسی درخواست همکاری"
+              icon={<FileCheck2 size={20} />}
+            >
+              <FormField
+                label="پروانه فعالیت کلینیک *"
+                error={errors.licenseDocument?.message}
+              >
+                <label
+                  htmlFor="licenseDocument"
+                  className={`flex cursor-pointer flex-col items-center rounded-2xl border-2 border-dashed p-6 text-center transition sm:p-8 ${
+                    selectedFile
+                      ? "border-blue-300 bg-blue-50/70"
+                      : "border-slate-200 bg-slate-50 hover:border-blue-300 hover:bg-blue-50/50"
+                  }`}
+                >
+                  <span className="flex size-14 items-center justify-center rounded-2xl bg-blue-100 text-blue-700">
+                    {selectedFile ? (
+                      <FileCheck2 size={27} />
+                    ) : (
+                      <UploadCloud size={27} />
+                    )}
+                  </span>
+
+                  <span className="mt-4 break-all text-sm font-extrabold text-slate-800">
+                    {selectedFile
+                      ? selectedFile.name
+                      : "برای انتخاب فایل کلیک کنید"}
+                  </span>
+
+                  <span className="mt-2 text-xs leading-6 text-slate-500">
+                    PDF، JPG یا PNG · حداکثر ۵ مگابایت
+                  </span>
+
+                  <input
+                    id="licenseDocument"
+                    type="file"
+                    className="sr-only"
+                    accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png"
+                    onChange={(event) => {
+                      const file = event.target.files?.[0] ?? null;
+
+                      setValue("licenseDocument", file, {
+                        shouldValidate: true,
+                        shouldDirty: true,
+                      });
+
+                      clearErrors("licenseDocument");
+                    }}
+                  />
+                </label>
+              </FormField>
 
               <div className="mt-5">
-                <label className="mb-2 block text-sm font-semibold">
-                  توضیحات تکمیلی
-                </label>
+                <FormField
+                  label="توضیحات تکمیلی (اختیاری)"
+                  error={errors.description?.message}
+                >
+                  <textarea
+                    {...register("description")}
+                    className={`${inputClass} min-h-28 resize-y`}
+                    placeholder="خدمات کلینیک یا توضیحات تکمیلی درباره درخواست همکاری..."
+                    maxLength={2000}
+                  />
+                </FormField>
+              </div>
+            </FormSection>
 
-                <textarea
-                  {...register("description")}
-                  className={`${inputClass} min-h-28 resize-y`}
-                  placeholder="خدمات کلینیک و زمینه همکاری..."
-                  maxLength={2000}
+            <div className="rounded-2xl border border-blue-100 bg-blue-50/70 p-4 sm:p-5">
+              <div className="flex items-start gap-3">
+                <ShieldCheck
+                  size={21}
+                  className="mt-0.5 shrink-0 text-blue-700"
                 />
-
-                <FieldError message={errors.description?.message} />
+                <p className="text-xs leading-7 text-slate-600">
+                  با ثبت این فرم، درخواست شما برای بررسی ارسال می‌شود. فعال‌شدن
+                  همکاری پس از تأیید مدیر سیستم انجام خواهد شد.
+                </p>
               </div>
             </div>
 
             <button
               type="submit"
               disabled={isSubmitting}
-              className="w-full rounded-xl bg-blue-700 px-5 py-3.5 font-bold text-white transition hover:bg-blue-800 focus:outline-none focus:ring-4 focus:ring-blue-700/20 disabled:cursor-not-allowed disabled:opacity-60"
+              className="group flex min-h-14 w-full items-center justify-center gap-2 rounded-2xl bg-blue-600 px-5 py-4 text-sm font-extrabold text-white shadow-lg shadow-blue-200 transition hover:bg-blue-700 hover:shadow-xl focus:outline-none focus:ring-4 focus:ring-blue-200 disabled:cursor-not-allowed disabled:opacity-60"
             >
-              {isSubmitting ? "در حال ارسال درخواست..." : "ثبت درخواست همکاری"}
+              {isSubmitting ? (
+                "در حال ارسال درخواست..."
+              ) : (
+                <>
+                  ارسال درخواست همکاری
+                  <ArrowLeft
+                    size={18}
+                    className="transition group-hover:-translate-x-1"
+                  />
+                </>
+              )}
             </button>
-
-            <p className="text-center text-xs leading-6 text-slate-400">
-              ثبت درخواست به معنی تأیید نهایی همکاری نیست.
-            </p>
           </form>
-        </section>
+
+          {/* Side panel */}
+          <aside className="space-y-5 lg:sticky lg:top-6">
+            <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+              <div className="border-b border-slate-100 px-5 py-4">
+                <h2 className="font-extrabold text-slate-900">خلاصه درخواست</h2>
+                <p className="mt-1 text-xs leading-5 text-slate-500">
+                  اطلاعاتی که تاکنون وارد کرده‌اید
+                </p>
+              </div>
+
+              <div className="space-y-4 p-5">
+                <SummaryRow
+                  icon={<Building2 size={17} />}
+                  label="نام کلینیک"
+                  value={clinicName || "هنوز وارد نشده"}
+                />
+
+                <SummaryRow
+                  icon={<UserRound size={17} />}
+                  label="دامپزشک مسئول"
+                  value={managerName || "هنوز وارد نشده"}
+                />
+
+                <SummaryRow
+                  icon={<MapPin size={17} />}
+                  label="موقعیت"
+                  value={
+                    selectedProvince && selectedCity
+                      ? `${selectedProvince.label}، ${selectedCity.label}`
+                      : "استان و شهر انتخاب نشده"
+                  }
+                />
+
+                <SummaryRow
+                  icon={<FileCheck2 size={17} />}
+                  label="مدرک فعالیت"
+                  value={selectedFile ? "فایل انتخاب شده" : "هنوز انتخاب نشده"}
+                />
+              </div>
+            </div>
+
+            <div className="rounded-2xl bg-slate-900 p-5 text-white">
+              <div className="flex items-center gap-3">
+                <span className="flex size-10 items-center justify-center rounded-xl bg-white/10 text-blue-300">
+                  <ShieldCheck size={21} />
+                </span>
+                <h3 className="font-extrabold">بعد از ارسال چه می‌شود؟</h3>
+              </div>
+
+              <ul className="mt-5 space-y-4">
+                {[
+                  "اطلاعات و مدارک بررسی می‌شوند.",
+                  "در صورت نیاز، برای تکمیل اطلاعات با شما تماس گرفته می‌شود.",
+                  "پس از تأیید، امکان ادامه همکاری فراهم خواهد شد.",
+                ].map((item) => (
+                  <li
+                    key={item}
+                    className="flex items-start gap-2.5 text-xs leading-6 text-slate-300"
+                  >
+                    <span className="mt-1 flex size-5 shrink-0 items-center justify-center rounded-full bg-blue-500/20 text-blue-300">
+                      <Check size={12} />
+                    </span>
+                    {item}
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            <div className="flex items-start gap-3 rounded-2xl border border-slate-200 bg-white p-4">
+              <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-600">
+                <Stethoscope size={19} />
+              </span>
+              <div>
+                <p className="text-sm font-bold text-slate-800">پیش از ارسال</p>
+                <p className="mt-1 text-xs leading-6 text-slate-500">
+                  از صحت اطلاعات تماس و خوانا بودن پروانه فعالیت مطمئن شوید.
+                </p>
+              </div>
+            </div>
+          </aside>
+        </div>
+
+        <footer className="mt-10 flex flex-col items-center justify-between gap-3 border-t border-slate-200 pt-6 text-xs text-slate-400 sm:flex-row">
+          <span>© PetCard · سلامت هوشمند حیوانات</span>
+          <span className="flex items-center gap-2">
+            <ShieldCheck size={14} />
+            ثبت درخواست همکاری
+          </span>
+        </footer>
       </div>
     </main>
+  );
+}
+
+function FormSection({
+  number,
+  title,
+  subtitle,
+  icon,
+  children,
+}: {
+  number: string;
+  title: string;
+  subtitle: string;
+  icon: ReactNode;
+  children: ReactNode;
+}) {
+  return (
+    <section className="rounded-2xl border border-slate-200/90 bg-white p-5 shadow-sm shadow-slate-200/30 sm:p-7">
+      <div className="mb-6 flex items-start gap-3 border-b border-slate-100 pb-5">
+        <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-700">
+          {icon}
+        </span>
+
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <h2 className="font-extrabold text-slate-900">{title}</h2>
+            <span className="rounded-md bg-slate-100 px-2 py-1 text-[10px] font-bold text-slate-400">
+              {number}
+            </span>
+          </div>
+
+          <p className="mt-1 text-xs leading-6 text-slate-500">{subtitle}</p>
+        </div>
+      </div>
+
+      {children}
+    </section>
+  );
+}
+
+function FormField({
+  label,
+  error,
+  children,
+}: {
+  label: string;
+  error?: string;
+  children: ReactNode;
+}) {
+  return (
+    <div className="min-w-0">
+      <label className="mb-2 block text-[13px] font-bold text-slate-700">
+        {label}
+      </label>
+
+      {children}
+
+      <FieldError message={error} />
+    </div>
+  );
+}
+
+function SummaryRow({
+  icon,
+  label,
+  value,
+}: {
+  icon: ReactNode;
+  label: string;
+  value: string;
+}) {
+  return (
+    <div className="flex items-start gap-3">
+      <span className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-lg bg-blue-50 text-blue-600">
+        {icon}
+      </span>
+
+      <div className="min-w-0 flex-1">
+        <p className="text-[11px] font-semibold text-slate-400">{label}</p>
+        <p className="mt-1 break-words text-sm font-bold leading-6 text-slate-700">
+          {value}
+        </p>
+      </div>
+    </div>
   );
 }
 

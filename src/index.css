@@ -2321,3 +2321,27 @@ textarea:focus-visible {
     color: #c0cec5;
   }
 }
+
+
+
+.ad-slider {
+  padding-bottom: 32px !important;
+}
+
+.ad-slider .swiper-pagination {
+  bottom: 0 !important;
+}
+
+.ad-slider .swiper-pagination-bullet {
+  width: 8px;
+  height: 8px;
+  background: #94a3b8;
+  opacity: 1;
+  transition: all 0.3s ease;
+}
+
+.ad-slider .swiper-pagination-bullet-active {
+  width: 24px;
+  border-radius: 999px;
+  background: #2563eb;
+}
