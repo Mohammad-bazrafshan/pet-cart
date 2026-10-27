@@ -1,4 +1,3 @@
-
 import { useEffect, useState, type FormEvent } from "react";
 import { Link } from "react-router-dom";
 import Select, { type StylesConfig } from "react-select";
@@ -83,9 +82,7 @@ const selectStyles: StylesConfig<SelectOption, false> = {
     borderRadius: "14px",
     borderColor: state.isFocused ? "#2563eb" : "#e2e8f0",
     backgroundColor: state.isDisabled ? "#f8fafc" : "#ffffff",
-    boxShadow: state.isFocused
-      ? "0 0 0 4px rgba(37,99,235,0.10)"
-      : "none",
+    boxShadow: state.isFocused ? "0 0 0 4px rgba(37,99,235,0.10)" : "none",
     transition: "all 180ms ease",
     "&:hover": {
       borderColor: "#93c5fd",
@@ -167,9 +164,7 @@ function SectionHeading({
 
       <div>
         <h2 className="text-lg font-extrabold text-slate-900">{title}</h2>
-        <p className="mt-1 text-sm leading-7 text-slate-500">
-          {description}
-        </p>
+        <p className="mt-1 text-sm leading-7 text-slate-500">{description}</p>
       </div>
     </div>
   );
@@ -186,7 +181,9 @@ export default function VeterinarianCooperation() {
 
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
-
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: "instant" });
+  }, []);
   useEffect(() => {
     async function loadClinics() {
       try {
@@ -278,10 +275,7 @@ export default function VeterinarianCooperation() {
     try {
       setSubmitting(true);
 
-      const {
-        confirmPassword: _confirmPassword,
-        ...applicationData
-      } = form;
+      const { confirmPassword: _confirmPassword, ...applicationData } = form;
 
       const response = await api.post(
         "/veterinarian-cooperation/applications",
@@ -426,7 +420,8 @@ export default function VeterinarianCooperation() {
                 فرم درخواست همکاری
               </h2>
               <p className="mt-2 text-sm leading-7 text-slate-500">
-                بخش‌های زیر را تکمیل کن تا درخواستت برای کلینیک انتخابی ارسال شود.
+                بخش‌های زیر را تکمیل کن تا درخواستت برای کلینیک انتخابی ارسال
+                شود.
               </p>
             </div>
 
@@ -656,9 +651,7 @@ export default function VeterinarianCooperation() {
                   </div>
 
                   <div>
-                    <label className={labelClass}>
-                      شماره نظام دامپزشکی
-                    </label>
+                    <label className={labelClass}>شماره نظام دامپزشکی</label>
                     <div className="relative">
                       <Award
                         size={18}
@@ -811,11 +804,7 @@ export default function VeterinarianCooperation() {
                       onClick={() => setShowPassword((current) => !current)}
                       className="inline-flex items-center gap-2 text-sm font-semibold text-blue-700 transition hover:text-blue-900"
                     >
-                      {showPassword ? (
-                        <EyeOff size={17} />
-                      ) : (
-                        <Eye size={17} />
-                      )}
+                      {showPassword ? <EyeOff size={17} /> : <Eye size={17} />}
                       {showPassword ? "مخفی کردن رمزها" : "نمایش رمزهای عبور"}
                     </button>
                   </div>
@@ -828,8 +817,8 @@ export default function VeterinarianCooperation() {
                   />
                   <p className="text-xs leading-7 text-blue-900">
                     رمز عبور خود را با دیگران به اشتراک نگذار. بک‌اند باید رمز
-                    عبور را به‌صورت امن هش کند و هرگز آن را به شکل متن ساده ذخیره
-                    نکند.
+                    عبور را به‌صورت امن هش کند و هرگز آن را به شکل متن ساده
+                    ذخیره نکند.
                   </p>
                 </div>
               </section>
@@ -915,10 +904,7 @@ export default function VeterinarianCooperation() {
                 </div>
 
                 <div className="flex items-start gap-3">
-                  <MapPin
-                    size={18}
-                    className="mt-0.5 shrink-0 text-blue-600"
-                  />
+                  <MapPin size={18} className="mt-0.5 shrink-0 text-blue-600" />
                   <div className="min-w-0">
                     <p className="text-xs text-slate-400">موقعیت فعالیت</p>
                     <p className="mt-1 text-sm font-bold text-slate-800">
@@ -956,10 +942,7 @@ export default function VeterinarianCooperation() {
                 </div>
 
                 <div className="flex items-start gap-3">
-                  <Clock3
-                    size={18}
-                    className="mt-0.5 shrink-0 text-blue-600"
-                  />
+                  <Clock3 size={18} className="mt-0.5 shrink-0 text-blue-600" />
                   <div className="min-w-0">
                     <p className="text-xs text-slate-400">نوع همکاری</p>
                     <p className="mt-1 text-sm font-bold text-slate-800">
@@ -991,7 +974,8 @@ export default function VeterinarianCooperation() {
                           form.password,
                           form.confirmPassword,
                         ].filter((value) => value.trim()).length
-                      } از ۱۰
+                      }{" "}
+                      از ۱۰
                     </span>
                   </div>
 
@@ -1064,9 +1048,7 @@ export default function VeterinarianCooperation() {
             <div className="rounded-2xl border border-slate-200 bg-white p-5">
               <div className="flex items-center gap-2">
                 <HeartPulse size={20} className="text-blue-700" />
-                <h3 className="font-extrabold text-slate-900">
-                  قبل از ارسال
-                </h3>
+                <h3 className="font-extrabold text-slate-900">قبل از ارسال</h3>
               </div>
 
               <ul className="mt-4 space-y-3 text-xs leading-6 text-slate-600">
