@@ -1,6 +1,11 @@
 
 import { NavLink } from "react-router-dom";
 
+type SidebarProps = {
+  isOpen: boolean;
+  onClose: () => void;
+};
+
 const menuItems = [
   { title: "داشبورد", path: "/dashboard", icon: "home" },
   { title: "پروفایل من", path: "/dashboard/profile", icon: "user" },
@@ -97,30 +102,56 @@ function NavIcon({ name }: { name: string }) {
   );
 }
 
-function Sidebar() {
+function Sidebar({ isOpen, onClose }: SidebarProps) {
   return (
     <aside
-      className="flex min-h-full w-full flex-col border-b border-slate-200 bg-white px-4 py-5 sm:px-5 lg:fixed lg:inset-y-0 lg:right-0 lg:z-40 lg:w-72 lg:border-b-0 lg:border-l lg:px-6 lg:py-7"
+      id="owner-sidebar"
       aria-label="منوی اصلی"
+      aria-hidden={!isOpen && undefined}
+      className={`fixed inset-y-0 right-0 z-50 flex h-dvh w-72 max-w-[85vw] flex-col overflow-y-auto border-l border-slate-200 bg-white px-4 py-5 shadow-xl transition-transform duration-300 ease-in-out sm:px-5 lg:z-40 lg:w-72 lg:max-w-none lg:translate-x-0 lg:px-6 lg:py-7 lg:shadow-none ${
+        isOpen ? "translate-x-0" : "translate-x-full"
+      }`}
     >
-      <NavLink
-        to="/"
-        className="flex items-center gap-3 rounded-2xl px-2 py-2"
-        aria-label="پت‌کارت، صفحه اصلی"
-      >
-        <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-blue-600 text-white shadow-lg shadow-blue-200">
-          <NavIcon name="paw" />
-        </span>
+      <div className="flex items-center justify-between">
+        <NavLink
+          to="/"
+          onClick={onClose}
+          className="flex min-w-0 items-center gap-3 rounded-2xl px-2 py-2"
+          aria-label="پت‌کارت، صفحه اصلی"
+        >
+          <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-blue-600 text-white shadow-lg shadow-blue-200">
+            <NavIcon name="paw" />
+          </span>
 
-        <span className="min-w-0">
-          <span className="block text-xl font-extrabold text-slate-900">
-            پت‌کارت
+          <span className="min-w-0">
+            <span className="block text-xl font-extrabold text-slate-900">
+              پت‌کارت
+            </span>
+            <span className="mt-1 block text-xs text-slate-500">
+              همراه سلامت دوست کوچکت
+            </span>
           </span>
-          <span className="mt-1 block text-xs text-slate-500">
-            همراه سلامت دوست کوچکت
-          </span>
-        </span>
-      </NavLink>
+        </NavLink>
+
+        <button
+          type="button"
+          onClick={onClose}
+          aria-label="بستن منو"
+          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-slate-500 transition hover:bg-slate-100 hover:text-slate-900 lg:hidden"
+        >
+          <svg
+            viewBox="0 0 24 24"
+            className="h-6 w-6"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth={2}
+            strokeLinecap="round"
+            aria-hidden="true"
+          >
+            <path d="m18 6-12 12M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
 
       <div className="mt-8">
         <p className="mb-3 px-3 text-xs font-bold text-slate-400">
@@ -128,7 +159,7 @@ function Sidebar() {
         </p>
 
         <nav
-          className="flex flex-wrap gap-2 lg:flex-col"
+          className="flex flex-col gap-2"
           aria-label="صفحات داشبورد"
         >
           {menuItems.map((item, index) => (
@@ -136,6 +167,7 @@ function Sidebar() {
               key={item.path}
               to={item.path}
               end={index === 0}
+              onClick={onClose}
               className={({ isActive }) =>
                 `flex min-h-11 items-center gap-3 rounded-2xl px-3 py-3 text-sm font-bold transition duration-200 ${
                   isActive
