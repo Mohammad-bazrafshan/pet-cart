@@ -41,7 +41,8 @@ import ServiceBookings from "../pages/owner/ServiceBookings";
 import ServiceProviders from "../pages/owner/ServiceProviders";
 import ServiceProviderDetails from "../pages/owner/ServiceProviderDetails";
 import OwnerProfile from "../pages/owner/OwnerProfile";
-
+import ForgotPassword from "../pages/auth/ForgotPassword";
+import ResetPassword from "../pages/auth/ResetPassword";
 const router = createBrowserRouter([
   {
     element: <RoleProtectedRoute allowedRoles={["veterinarian"]} />,
@@ -125,7 +126,14 @@ const router = createBrowserRouter([
     path: "/login",
     element: <Login />,
   },
-
+  {
+    path: "/forgot-password",
+    element: <ForgotPassword />,
+  },
+  {
+    path: "/reset-password",
+    element: <ResetPassword />,
+  },
   {
     path: "/register",
     element: <Register />,

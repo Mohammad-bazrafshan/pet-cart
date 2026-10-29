@@ -1,4 +1,3 @@
-
 import { useState, type FormEvent } from "react";
 import { Link, Navigate, useNavigate } from "react-router-dom";
 import {
@@ -152,7 +151,7 @@ function Login() {
             </div>
 
             <div>
-              <div className="mb-2 flex items-center justify-between">
+              <div className="mb-2 flex items-center justify-between gap-3">
                 <label
                   htmlFor="login-password"
                   className="text-sm font-bold text-slate-700"
@@ -186,15 +185,18 @@ function Login() {
                   }
                   className="absolute left-3 top-1/2 flex size-9 -translate-y-1/2 items-center justify-center rounded-xl text-slate-400 transition hover:bg-blue-50 hover:text-blue-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
                 >
-                  {showPassword ? (
-                    <EyeOff size={19} />
-                  ) : (
-                    <Eye size={19} />
-                  )}
+                  {showPassword ? <EyeOff size={19} /> : <Eye size={19} />}
                 </button>
               </div>
             </div>
-
+            <div className="-mt-2 flex justify-end">
+              <Link
+                to="/forgot-password"
+                className="inline-flex rounded-lg px-2 py-1.5 text-sm font-bold text-blue-600 transition-all duration-200 hover:bg-blue-50 hover:text-blue-800 hover:underline hover:underline-offset-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
+              >
+                فراموشی رمز عبور؟
+              </Link>
+            </div>
             <button
               type="submit"
               disabled={loading}
@@ -227,7 +229,7 @@ function Login() {
             هنوز حساب نداری؟{" "}
             <Link
               to="/register"
-              className="font-extrabold text-blue-600 transition hover:text-blue-800"
+              className="inline-flex rounded-lg px-2 py-1 font-extrabold text-blue-600 transition-all duration-200 hover:bg-blue-50 hover:text-blue-800 hover:underline hover:underline-offset-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
             >
               ثبت‌نام کن
             </Link>
@@ -235,7 +237,7 @@ function Login() {
 
           <Link
             to="/"
-            className="mt-6 inline-flex items-center justify-center gap-2 self-center text-xs font-semibold text-slate-400 transition hover:text-blue-600"
+            className="mt-6 inline-flex items-center justify-center gap-2 self-center rounded-lg px-3 py-2 text-xs font-semibold text-slate-500 transition-all duration-200 hover:bg-blue-50 hover:text-blue-700 hover:underline hover:underline-offset-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
           >
             <ArrowLeft size={14} />
             بازگشت به صفحه اصلی
